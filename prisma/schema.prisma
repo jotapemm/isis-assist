@@ -1,0 +1,170 @@
+// Isis-Assist — modelo de dados.
+// Convenções (docs/PLANO.md §2): dinheiro em centavos (Int), datas de calendário em @db.Date,
+// toda tabela de domínio carrega organizationId (a conta do proprietário).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Acesso (tabelas do Better Auth — nomes em inglês por serem da biblioteca) ───
+
+model User {
+  id            String       @id
+  name          String
+  email         String       @unique
+  emailVerified Boolean      @default(false)
+  image         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @default(now()) @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  members       Member[]
+  invitations   Invitation[]
+
+  @@map("user")
+}
+
+model Session {
+  id                   String   @id
+  expiresAt            DateTime
+  token                String   @unique
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  ipAddress            String?
+  userAgent            String?
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeOrganizationId String?
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+/// A conta do proprietário — o "tenant". Tudo do domínio pendura aqui.
+model Organization {
+  id           String        @id
+  name         String
+  slug         String        @unique
+  logo         String?
+  createdAt    DateTime
+  metadata     String?
+  members      Member[]
+  invitations  Invitation[]
+  configuracao Configuracao?
+  propriedades Propriedade[]
+
+  @@map("organization")
+}
+
+model Member {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String       @default("member")
+  createdAt      DateTime
+
+  @@index([organizationId])
+  @@index([userId])
+  @@map("member")
+}
+
+model Invitation {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           String?
+  status         String       @default("pending")
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  inviterId      String
+  user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([email])
+  @@map("invitation")
+}
+
+// ─── Conta ───
+
+/// Preferências da conta: dados do locador que saem no recibo e regras de cobrança.
+model Configuracao {
+  id                    String       @id @default(cuid())
+  organizationId        String       @unique
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  locadorNome           String?
+  locadorDocumento      String? // CPF ou CNPJ, só dígitos
+  locadorTelefone       String? // só dígitos, com DDD
+  locadorEmail          String?
+  chavePix              String?
+  multaPercentual       Decimal      @default(10) @db.Decimal(5, 2)
+  jurosMensalPercentual Decimal      @default(1) @db.Decimal(5, 2)
+  diasCarencia          Int          @default(0)
+  proximoNumeroRecibo   Int          @default(1)
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  @@map("configuracao")
+}
+
+// ─── Imóveis ───
+
+model Propriedade {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  nome           String
+  cep            String? // só dígitos
+  logradouro     String?
+  numero         String?
+  complemento    String?
+  bairro         String?
+  cidade         String?
+  uf             String?      @db.Char(2)
+  observacoes    String?
+  arquivadoEm    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@map("propriedade")
+}
