@@ -29,17 +29,17 @@ export function FormLocador({ inicial }: { inicial: DadosLocador }) {
   return (
     <Secao
       titulo="Dados para o recibo"
-      descricao="Saem impressos em todo recibo de aluguel. A chave PIX vai junto na mensagem de cobrança."
+      descricao="Saem impressos em todo recibo de aluguel. A chave PIX vai junto na mensagem de cobrança. Só o nome é obrigatório."
       onSubmit={enviar}
       podeSalvar={form.formState.isDirty}
       salvando={pendente}
     >
-      <FieldGroup className="grid gap-5 sm:grid-cols-2">
-        <CampoTexto control={form.control} name="locadorNome" rotulo="Nome do locador" autoComplete="name" className="sm:col-span-2" />
-        <CampoTexto control={form.control} name="locadorDocumento" rotulo="CPF ou CNPJ" opcional inputMode="numeric" mascara={mascararCpfCnpj} />
-        <CampoTexto control={form.control} name="locadorTelefone" rotulo="Telefone" opcional inputMode="tel" autoComplete="tel" mascara={mascararTelefone} />
-        <CampoTexto control={form.control} name="locadorEmail" rotulo="E-mail" opcional type="email" inputMode="email" autoCapitalize="none" />
-        <CampoTexto control={form.control} name="chavePix" rotulo="Chave PIX" opcional autoCapitalize="none" />
+      <FieldGroup className="grid gap-5 @lg:grid-cols-2">
+        <CampoTexto control={form.control} name="locadorNome" rotulo="Nome do locador" autoComplete="name" className="@lg:col-span-2" />
+        <CampoTexto control={form.control} name="locadorDocumento" rotulo="CPF ou CNPJ" inputMode="numeric" mascara={mascararCpfCnpj} />
+        <CampoTexto control={form.control} name="locadorTelefone" rotulo="Telefone" inputMode="tel" autoComplete="tel" mascara={mascararTelefone} />
+        <CampoTexto control={form.control} name="locadorEmail" rotulo="E-mail" type="email" inputMode="email" autoCapitalize="none" />
+        <CampoTexto control={form.control} name="chavePix" rotulo="Chave PIX" autoCapitalize="none" />
       </FieldGroup>
       <AvisoErro mensagem={erro} />
     </Secao>
@@ -57,7 +57,7 @@ export function FormCobranca({ inicial }: { inicial: DadosCobranca }) {
       podeSalvar={form.formState.isDirty}
       salvando={pendente}
     >
-      <FieldGroup className="grid gap-5 sm:grid-cols-3">
+      <FieldGroup className="grid gap-5 @xl:grid-cols-3">
         <CampoPercentual control={form.control} name="multaPercentual" rotulo="Multa" descricao="Cobrada uma vez." />
         <CampoPercentual control={form.control} name="jurosMensalPercentual" rotulo="Juros" sufixo="% ao mês" descricao="Proporcional aos dias." />
         <CampoPercentual control={form.control} name="diasCarencia" rotulo="Tolerância" sufixo="dias" descricao="Antes de contar atraso." />
@@ -96,18 +96,17 @@ export function FormEndereco({ inicial }: { inicial: DadosEndereco }) {
   return (
     <Secao
       titulo="Residencial"
-      descricao="Nome e endereço do prédio. Aparecem no recibo e nos relatórios."
+      descricao="Nome e endereço do prédio, para o recibo e os relatórios. Só o nome é obrigatório."
       onSubmit={enviar}
       podeSalvar={form.formState.isDirty}
       salvando={pendente}
     >
-      <FieldGroup className="grid gap-5 sm:grid-cols-6">
-        <CampoTexto control={form.control} name="nome" rotulo="Nome do residencial" className="sm:col-span-6" />
+      <FieldGroup className="grid grid-cols-6 gap-5">
+        <CampoTexto control={form.control} name="nome" rotulo="Nome do residencial" className="col-span-6" />
         <CampoTexto
           control={form.control}
           name="cep"
           rotulo="CEP"
-          opcional
           inputMode="numeric"
           autoComplete="postal-code"
           mascara={(v) => {
@@ -115,20 +114,20 @@ export function FormEndereco({ inicial }: { inicial: DadosEndereco }) {
             if (somenteDigitos(m).length === 8) void buscarCep(m);
             return m;
           }}
-          className="sm:col-span-2"
+          className="col-span-6 @xl:col-span-2"
         />
-        <CampoTexto control={form.control} name="logradouro" rotulo="Rua" opcional className="sm:col-span-4" />
-        <CampoTexto control={form.control} name="numero" rotulo="Número" opcional inputMode="numeric" className="sm:col-span-2" />
-        <CampoTexto control={form.control} name="complemento" rotulo="Complemento" opcional className="sm:col-span-4" />
-        <CampoTexto control={form.control} name="bairro" rotulo="Bairro" opcional className="sm:col-span-2" />
-        <CampoTexto control={form.control} name="cidade" rotulo="Cidade" opcional className="sm:col-span-3" />
+        <CampoTexto control={form.control} name="logradouro" rotulo="Rua" className="col-span-6 @xl:col-span-4" />
+        <CampoTexto control={form.control} name="numero" rotulo="Número" inputMode="numeric" className="col-span-2" />
+        <CampoTexto control={form.control} name="complemento" rotulo="Complemento" className="col-span-4" />
+        <CampoTexto control={form.control} name="bairro" rotulo="Bairro" className="col-span-6 @xl:col-span-2" />
+        <CampoTexto control={form.control} name="cidade" rotulo="Cidade" className="col-span-4 @xl:col-span-2" />
         <CampoSelecao
           control={form.control}
           name="uf"
           rotulo="Estado"
-          opcional
+          limpavel
           opcoes={UFS.map((uf) => ({ valor: uf, rotulo: uf }))}
-          className="sm:col-span-1"
+          className="col-span-2"
         />
       </FieldGroup>
       <AvisoErro mensagem={erro} />
@@ -163,7 +162,7 @@ export function FormTrocarSenha() {
       salvando={form.formState.isSubmitting}
       rotuloSalvar="Trocar senha"
     >
-      <FieldGroup className="grid gap-5 sm:grid-cols-3">
+      <FieldGroup className="grid gap-5 @xl:grid-cols-3">
         <CampoSenha control={form.control} name="atual" rotulo="Senha atual" autoComplete="current-password" />
         <CampoSenha control={form.control} name="senha" rotulo="Nova senha" autoComplete="new-password" />
         <CampoSenha control={form.control} name="confirmacao" rotulo="Repita a nova" autoComplete="new-password" />

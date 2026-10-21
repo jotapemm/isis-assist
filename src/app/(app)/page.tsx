@@ -39,8 +39,8 @@ async function Painel() {
 
       <EstadoVazio
         ilustracao={<Fachada apagada className="mb-6 w-44 sm:w-52" />}
-        titulo="Vamos montar o seu residencial"
-        descricao="Cadastre os apartamentos e eles aparecem aqui, na fachada, cada um com a cor do seu status. Se você já controla tudo numa planilha, dá para trazer de lá."
+        titulo="Nenhum apartamento cadastrado"
+        descricao="Cadastre os apartamentos ou importe a planilha que você já usa. Cada um aparece aqui na fachada, com a cor do status."
       >
         <Button asChild size="lg">
           <Link href="/apartamentos">

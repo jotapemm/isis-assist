@@ -4,16 +4,16 @@ import { Logotipo } from "@/components/marca";
 export default function LayoutPublico({ children }: { children: React.ReactNode }) {
   return (
     <div className="grid min-h-dvh lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
-      <aside className="relative hidden flex-col overflow-hidden bg-[#2c3fa3] p-10 text-white lg:flex xl:p-14">
+      <aside className="hidden flex-col overflow-hidden bg-[#2c3fa3] px-10 pt-10 text-white lg:flex xl:px-14 xl:pt-14">
         <Logotipo sobreEscuro />
-        <div className="my-auto w-full max-w-[22rem] self-center py-10">
-          <Fachada />
-        </div>
-        <p className="max-w-md font-heading text-[2rem] leading-tight text-balance">
-          Aluguéis, contratos e recebimentos do seu residencial. Sem planilha.
+        <p className="mt-5 max-w-sm text-lg leading-snug text-white/75">
+          Apartamentos, inquilinos e aluguéis do residencial.
         </p>
-        {/* luz do latão vindo de baixo */}
-        <div className="pointer-events-none absolute -bottom-40 left-1/2 size-[32rem] -translate-x-1/2 rounded-full bg-[#d9ae5a]/15 blur-3xl" />
+        {/* O prédio fica de pé na calçada, no rodapé do painel. */}
+        <div className="mt-auto w-full max-w-[24rem] self-center pt-12">
+          <Fachada className="block" />
+        </div>
+        <div className="-mx-10 h-4 shrink-0 bg-[#24358f] xl:-mx-14" />
       </aside>
 
       <main className="flex flex-col px-4 pt-[max(1.5rem,env(safe-area-inset-top))] pb-10 sm:px-8 lg:justify-center">

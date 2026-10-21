@@ -5,6 +5,7 @@ import { Controller, type Control, type FieldPath, type FieldValues } from "reac
 import { Eye, EyeOff } from "lucide-react";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatarValor } from "@/lib/formatar";
 import { centavosDeDigitos } from "@/lib/mascaras";
 import { cn } from "@/lib/utils";
@@ -171,30 +172,43 @@ export function CampoPercentual<T extends FieldValues>(props: Base<T> & PropsInp
   );
 }
 
-/** Lista de opções nativa: no celular abre o seletor do próprio aparelho, que é o mais fácil de usar. */
+// O Radix não aceita item com valor vazio; "Não informar" usa este marcador e vira "" no formulário.
+const NAO_INFORMAR = "__nao_informar__";
+
+/** Lista de opções que abre logo abaixo do campo, com rolagem quando é longa (ex.: os 27 estados). */
 export function CampoSelecao<T extends FieldValues>(
-  props: Base<T> & { opcoes: readonly { valor: string; rotulo: string }[]; vazio?: string },
+  props: Base<T> & {
+    opcoes: readonly { valor: string; rotulo: string }[];
+    vazio?: string;
+    /** Mostra "Não informar" no topo da lista, para desfazer a escolha. */
+    limpavel?: boolean;
+  },
 ) {
-  const { control, name, rotulo, descricao, opcional, className, opcoes, vazio = "Escolha…" } = props;
+  const { control, name, rotulo, descricao, opcional, className, opcoes, vazio = "Escolha", limpavel } = props;
   return (
     <Moldura {...{ control, name, rotulo, descricao, opcional, className }}>
-      {({ id, invalido, valor, aoMudar, aoSair }) => (
-        <select
-          id={id}
-          name={name}
-          aria-invalid={invalido}
+      {({ id, invalido, valor, aoMudar, aoSair, ref }) => (
+        <Select
           value={(valor as string) ?? ""}
-          onBlur={aoSair}
-          onChange={(e) => aoMudar(e.target.value)}
-          className="h-11 w-full rounded-lg border border-input bg-card px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive md:h-10 dark:bg-input/30"
+          onValueChange={(v) => aoMudar(v === NAO_INFORMAR ? "" : v)}
+          onOpenChange={(aberto) => !aberto && aoSair()}
         >
-          <option value="">{vazio}</option>
-          {opcoes.map((o) => (
-            <option key={o.valor} value={o.valor}>
-              {o.rotulo}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id={id} ref={ref as React.Ref<HTMLButtonElement>} aria-invalid={invalido} className="w-full">
+            <SelectValue placeholder={vazio} />
+          </SelectTrigger>
+          <SelectContent position="popper" align="start">
+            {limpavel && valor ? (
+              <SelectItem value={NAO_INFORMAR} className="text-muted-foreground">
+                Não informar
+              </SelectItem>
+            ) : null}
+            {opcoes.map((o) => (
+              <SelectItem key={o.valor} value={o.valor}>
+                {o.rotulo}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       )}
     </Moldura>
   );

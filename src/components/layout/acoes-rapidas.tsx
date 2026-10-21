@@ -30,7 +30,7 @@ export function AcoesRapidasCelular() {
     <Sheet open={aberto} onOpenChange={setAberto}>
       <SheetTrigger
         aria-label="Ações rápidas"
-        className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 ring-4 ring-background transition-transform active:scale-95 lg:hidden"
+        className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md shadow-black/20 transition-transform active:scale-95 lg:hidden"
       >
         <Plus className="size-7" strokeWidth={2.4} />
       </SheetTrigger>

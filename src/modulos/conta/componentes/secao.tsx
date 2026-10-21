@@ -20,11 +20,11 @@ export function Secao({
 }) {
   const corpo = (
     <>
-      <div className="lg:pr-6">
+      <div className="max-w-xl">
         <h2 className="font-heading text-xl">{titulo}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{descricao}</p>
       </div>
-      <div className="rounded-2xl border bg-card p-4 sm:p-6">
+      <div className="@container rounded-2xl border bg-card p-4 sm:p-6">
         {children}
         {onSubmit && (
           <div className="mt-6 flex justify-end border-t pt-4">
@@ -37,7 +37,7 @@ export function Secao({
     </>
   );
 
-  const classe = "grid gap-4 border-b py-8 first:pt-0 last:border-b-0 lg:grid-cols-[18rem_minmax(0,1fr)]";
+  const classe = "grid gap-4 border-b py-8 first:pt-0 last:border-b-0 xl:grid-cols-[16rem_minmax(0,1fr)] xl:gap-8";
   return onSubmit ? (
     <form onSubmit={onSubmit} noValidate className={classe}>
       {corpo}

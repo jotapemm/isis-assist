@@ -13,7 +13,7 @@ export function EsqueletoCartoes() {
 
 export function EsqueletoFormulario() {
   return (
-    <div aria-busy="true" aria-label="Carregando" className="grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
+    <div aria-busy="true" aria-label="Carregando" className="grid gap-4 xl:grid-cols-[16rem_minmax(0,1fr)] xl:gap-8">
       <div className="flex flex-col gap-2">
         <Skeleton className="h-6 w-40" />
         <Skeleton className="h-4 w-56" />
