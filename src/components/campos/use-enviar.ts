@@ -21,12 +21,16 @@ export function useEnviar<T extends FieldValues>(
     setErro(null);
     iniciar(async () => {
       const resultado = await acao(dados);
+      // Action que redireciona (ex.: cadastrar e abrir a página nova) não devolve nada: a navegação já cuida.
+      if (!resultado) return;
       if (resultado.ok) {
         toast.success(mensagemSucesso);
         form.reset(dados);
         return;
       }
-      setErro(resultado.erro);
+      // Se o erro geral é o mesmo de um campo (ex.: CPF repetido), ele já aparece embaixo do campo.
+      const mensagensDosCampos = Object.values(resultado.campos ?? {});
+      setErro(mensagensDosCampos.includes(resultado.erro) ? null : resultado.erro);
       for (const [campo, mensagem] of Object.entries(resultado.campos ?? {})) {
         form.setError(campo as Path<T>, { message: mensagem });
       }

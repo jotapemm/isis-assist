@@ -23,7 +23,7 @@ export function FormBoasVindas() {
     iniciar(async () => {
       // Se der certo, a action redireciona para o painel e nada abaixo roda.
       const resultado = await criarResidencial(dados);
-      if (!resultado.ok) setErro(resultado.erro);
+      if (resultado && !resultado.ok) setErro(resultado.erro);
     });
   }
 

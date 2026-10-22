@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Suspense } from "react";
 import { Logotipo } from "@/components/marca";
 import { cn } from "@/lib/utils";
 import { AcoesRapidasDesktop } from "./acoes-rapidas";
@@ -9,8 +10,6 @@ import { estaAtivo, type ItemNavegacao, NAVEGACAO, NAVEGACAO_SECUNDARIA } from "
 
 /** Navegação do desktop. No celular quem faz esse papel é o MenuInferior. */
 export function BarraLateral({ rodape }: { rodape: React.ReactNode }) {
-  const caminho = usePathname();
-
   return (
     <aside className="sticky top-0 hidden h-dvh flex-col border-r border-sidebar-border bg-sidebar px-4 py-6 lg:flex">
       <Link href="/" className="mb-8 px-2" aria-label="Isis-Assist — início">
@@ -19,18 +18,32 @@ export function BarraLateral({ rodape }: { rodape: React.ReactNode }) {
 
       <AcoesRapidasDesktop />
 
-      <nav aria-label="Principal" className="mt-6 flex flex-1 flex-col gap-1">
-        {NAVEGACAO.map((item) => (
-          <ItemBarra key={item.href} item={item} ativo={estaAtivo(item.href, caminho)} />
-        ))}
-        <div className="my-3 h-px bg-sidebar-border" />
-        {NAVEGACAO_SECUNDARIA.map((item) => (
-          <ItemBarra key={item.href} item={item} ativo={estaAtivo(item.href, caminho)} />
-        ))}
-      </nav>
+      {/* O endereço atual só existe na hora do acesso: a lista sai pronta sem marcação e acende o item em seguida. */}
+      <Suspense fallback={<ListaLateral caminho={null} />}>
+        <ListaLateralAtiva />
+      </Suspense>
 
       <div className="border-t border-sidebar-border pt-4">{rodape}</div>
     </aside>
+  );
+}
+
+function ListaLateralAtiva() {
+  return <ListaLateral caminho={usePathname()} />;
+}
+
+function ListaLateral({ caminho }: { caminho: string | null }) {
+  const ativo = (href: string) => caminho !== null && estaAtivo(href, caminho);
+  return (
+    <nav aria-label="Principal" className="mt-6 flex flex-1 flex-col gap-1">
+      {NAVEGACAO.map((item) => (
+        <ItemBarra key={item.href} item={item} ativo={ativo(item.href)} />
+      ))}
+      <div className="my-3 h-px bg-sidebar-border" />
+      {NAVEGACAO_SECUNDARIA.map((item) => (
+        <ItemBarra key={item.href} item={item} ativo={ativo(item.href)} />
+      ))}
+    </nav>
   );
 }
 

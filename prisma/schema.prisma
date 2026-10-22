@@ -14,17 +14,18 @@ datasource db {
 // ─── Acesso (tabelas do Better Auth — nomes em inglês por serem da biblioteca) ───
 
 model User {
-  id            String       @id
-  name          String
-  email         String       @unique
-  emailVerified Boolean      @default(false)
-  image         String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @default(now()) @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  members       Member[]
-  invitations   Invitation[]
+  id             String            @id
+  name           String
+  email          String            @unique
+  emailVerified  Boolean           @default(false)
+  image          String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @default(now()) @updatedAt
+  sessions       Session[]
+  accounts       Account[]
+  members        Member[]
+  invitations    Invitation[]
+  mudancasStatus HistoricoStatus[]
 
   @@map("user")
 }
@@ -89,6 +90,9 @@ model Organization {
   invitations  Invitation[]
   configuracao Configuracao?
   propriedades Propriedade[]
+  apartamentos Apartamento[]
+  inquilinos   Inquilino[]
+  arquivos     Arquivo[]
 
   @@map("organization")
 }
@@ -149,9 +153,9 @@ model Configuracao {
 // ─── Imóveis ───
 
 model Propriedade {
-  id             String       @id @default(cuid())
+  id             String        @id @default(cuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   nome           String
   cep            String? // só dígitos
   logradouro     String?
@@ -159,12 +163,163 @@ model Propriedade {
   complemento    String?
   bairro         String?
   cidade         String?
-  uf             String?      @db.Char(2)
+  uf             String?       @db.Char(2)
   observacoes    String?
   arquivadoEm    DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  apartamentos   Apartamento[]
 
   @@index([organizationId])
   @@map("propriedade")
+}
+
+enum StatusApartamento {
+  LIVRE
+  OCUPADO
+  RESERVADO
+  REFORMA
+  MANUTENCAO
+}
+
+/// De onde veio uma mudança de status — a usuária, um contrato, uma ordem de serviço ou um lembrete.
+enum OrigemStatus {
+  MANUAL
+  CONTRATO
+  MANUTENCAO
+  LEMBRETE
+  IMPORTACAO
+}
+
+model Apartamento {
+  id              String            @id @default(cuid())
+  organizationId  String
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  propriedadeId   String
+  propriedade     Propriedade       @relation(fields: [propriedadeId], references: [id], onDelete: Cascade)
+  /// O "número" do apartamento como aparece na porta: "203", "01", "Casa 2".
+  identificacao   String
+  /// 0 = térreo; vazio = não se aplica (ex.: casas).
+  andar           Int?
+  bloco           String?
+  descricao       String?
+  quartos         Int?
+  areaM2          Int?
+  valorReferencia Int? // centavos
+  status          StatusApartamento @default(LIVRE)
+  observacoes     String?
+  arquivadoEm     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  historicoStatus HistoricoStatus[]
+  arquivos        Arquivo[]
+
+  @@unique([propriedadeId, identificacao])
+  @@index([organizationId])
+  @@map("apartamento")
+}
+
+model HistoricoStatus {
+  id             String             @id @default(cuid())
+  organizationId String
+  apartamentoId  String
+  apartamento    Apartamento        @relation(fields: [apartamentoId], references: [id], onDelete: Cascade)
+  /// Vazio no primeiro registro (cadastro do apartamento).
+  de             StatusApartamento?
+  para           StatusApartamento
+  motivo         String?
+  origem         OrigemStatus       @default(MANUAL)
+  usuarioId      String?
+  usuario        User?              @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  createdAt      DateTime           @default(now())
+
+  @@index([apartamentoId, createdAt])
+  @@index([organizationId])
+  @@map("historico_status")
+}
+
+// ─── Pessoas ───
+
+model Inquilino {
+  id                          String       @id @default(cuid())
+  organizationId              String
+  organization                Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  nome                        String
+  cpf                         String? // só dígitos
+  rg                          String?
+  dataNascimento              DateTime?    @db.Date
+  telefone                    String? // só dígitos, com DDD
+  email                       String?
+  profissao                   String?
+  rendaMensal                 Int? // centavos
+  contatoEmergenciaNome       String?
+  contatoEmergenciaTelefone   String?
+  contatoEmergenciaParentesco String?
+  observacoes                 String?
+  /// Consentimento para receber mensagens pelo WhatsApp (LGPD) — usado nas cobranças automáticas do v2.
+  aceitaWhatsapp              Boolean      @default(true)
+  /// v2 — portal do inquilino: o login dele, quando for convidado.
+  usuarioId                   String?      @unique
+  /// v2 — cliente correspondente no gateway de pagamento (Asaas/Efí).
+  gatewayClienteId            String?
+  arquivadoEm                 DateTime?
+  createdAt                   DateTime     @default(now())
+  updatedAt                   DateTime     @updatedAt
+  fiadores                    Fiador[]
+  arquivos                    Arquivo[]
+
+  @@unique([organizationId, cpf])
+  @@index([organizationId])
+  @@map("inquilino")
+}
+
+model Fiador {
+  id             String    @id @default(cuid())
+  organizationId String
+  inquilinoId    String
+  inquilino      Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  nome           String
+  cpf            String?
+  telefone       String?
+  email          String?
+  endereco       String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([inquilinoId])
+  @@map("fiador")
+}
+
+// ─── Arquivos ───
+
+enum CategoriaArquivo {
+  FOTO_APTO
+  DOCUMENTO
+  CONTRATO_PDF
+  COMPROVANTE
+  FOTO_OS
+}
+
+/// Metadados de um arquivo guardado no storage. O conteúdo fica fora do banco (disco em dev, S3 em produção).
+model Arquivo {
+  id             String           @id @default(cuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  chave          String           @unique
+  nomeOriginal   String
+  tipoMime       String
+  tamanhoBytes   Int
+  categoria      CategoriaArquivo
+  ordem          Int              @default(0)
+  apartamentoId  String?
+  apartamento    Apartamento?     @relation(fields: [apartamentoId], references: [id], onDelete: Cascade)
+  inquilinoId    String?
+  inquilino      Inquilino?       @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  enviadoPorId   String?
+  createdAt      DateTime         @default(now())
+
+  @@index([organizationId])
+  @@index([apartamentoId])
+  @@index([inquilinoId])
+  @@map("arquivo")
 }

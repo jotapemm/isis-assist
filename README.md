@@ -21,6 +21,8 @@ npm run dev                 # http://localhost:3000
 **Conta de demonstração:** e-mail e senha estão em `SEED_EMAIL` e `SEED_SENHA` no `.env`.
 `npm run db:seed` recria essa conta do zero sempre que rodar (as outras contas não são tocadas).
 
+**Fotos e documentos em desenvolvimento:** ficam na pasta `.armazenamento/` (fora do git). O seed apaga os da conta de demonstração.
+
 **"Esqueci a senha" em desenvolvimento:** sem `RESEND_API_KEY`, o e-mail com o link aparece no terminal do `npm run dev`.
 
 **Testar no celular:** o servidor de dev também responde no IP da rede (aparece como "Network" ao iniciar).
@@ -35,7 +37,7 @@ Para instalar como app (PWA) é preciso HTTPS — isso entra no deploy.
 | `npm test` | Testes (Vitest) |
 | `npm run typecheck` / `npm run lint` | Tipos e lint |
 | `npm run db:subir` | Sobe o Postgres local do Prisma em segundo plano |
-| `npm run db:migrar` | Cria/aplica migrações (`prisma migrate dev`) |
+| `npm run db:migrar` | Cria/aplica migrações e gera o cliente Prisma |
 | `npm run db:seed` | Recria a conta de demonstração |
 | `npm run db:studio` | Abre o Prisma Studio para olhar o banco |
 | `npm run icones` | Regera os ícones do PWA a partir da marca |

@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { Controller, type Control, type FieldPath, type FieldValues } from "react-hook-form";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Minus, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { formatarValor } from "@/lib/formatar";
 import { centavosDeDigitos } from "@/lib/mascaras";
 import { cn } from "@/lib/utils";
@@ -122,28 +125,154 @@ export function CampoSenha<T extends FieldValues>(props: Base<T> & PropsInput) {
   );
 }
 
+/** Campo de reais solto (fora do react-hook-form). Valor em centavos; os dígitos entram pela direita. */
+export function InputMoeda({
+  centavos,
+  aoMudar,
+  ...input
+}: Omit<React.ComponentProps<typeof Input>, "value" | "onChange"> & { centavos: number; aoMudar: (centavos: number) => void }) {
+  return (
+    <Adorno prefixo="R$">
+      <Input
+        {...input}
+        inputMode="numeric"
+        value={formatarValor(centavos || 0)}
+        onChange={(e) => aoMudar(centavosDeDigitos(e.target.value))}
+        className="pl-11 text-right tabular-nums"
+      />
+    </Adorno>
+  );
+}
+
 /** Valor em reais guardado em centavos (number). Os dígitos entram pela direita, como no caixa eletrônico. */
 export function CampoMoeda<T extends FieldValues>(props: Base<T> & PropsInput) {
   const { control, name, rotulo, descricao, opcional, className, ...input } = props;
   return (
     <Moldura {...{ control, name, rotulo, descricao, opcional, className }}>
       {({ id, invalido, valor, aoMudar, aoSair, ref }) => (
-        <Adorno prefixo="R$">
-          <Input
-            {...input}
-            id={id}
-            ref={ref}
-            name={name}
-            inputMode="numeric"
-            aria-invalid={invalido}
-            value={formatarValor(Number(valor) || 0)}
-            onBlur={aoSair}
-            onChange={(e) => aoMudar(centavosDeDigitos(e.target.value))}
-            className="pl-11 text-right tabular-nums"
-          />
-        </Adorno>
+        <InputMoeda
+          {...input}
+          id={id}
+          ref={ref}
+          name={name}
+          aria-invalid={invalido}
+          centavos={Number(valor) || 0}
+          onBlur={aoSair}
+          aoMudar={aoMudar}
+        />
       )}
     </Moldura>
+  );
+}
+
+/** Texto longo (descrição, observações). Cresce conforme a pessoa escreve. */
+export function CampoAreaTexto<T extends FieldValues>(
+  props: Base<T> & Omit<React.ComponentProps<typeof Textarea>, "name" | "value" | "onChange" | "defaultValue">,
+) {
+  const { control, name, rotulo, descricao, opcional, className, ...area } = props;
+  return (
+    <Moldura {...{ control, name, rotulo, descricao, opcional, className }}>
+      {({ id, invalido, valor, aoMudar, aoSair }) => (
+        <Textarea
+          {...area}
+          id={id}
+          name={name}
+          aria-invalid={invalido}
+          value={(valor as string) ?? ""}
+          onBlur={aoSair}
+          onChange={(e) => aoMudar(e.target.value)}
+        />
+      )}
+    </Moldura>
+  );
+}
+
+/** Data com o calendário do próprio aparelho. O valor é "AAAA-MM-DD"; a tela mostra dd/mm/aaaa. */
+export function CampoData<T extends FieldValues>(props: Base<T> & Omit<PropsInput, "type">) {
+  const { control, name, rotulo, descricao, opcional, className, ...input } = props;
+  return (
+    <Moldura {...{ control, name, rotulo, descricao, opcional, className }}>
+      {({ id, invalido, valor, aoMudar, aoSair, ref }) => (
+        <Input
+          {...input}
+          type="date"
+          id={id}
+          ref={ref}
+          name={name}
+          aria-invalid={invalido}
+          value={(valor as string) ?? ""}
+          onBlur={aoSair}
+          onChange={(e) => aoMudar(e.target.value)}
+          className="block"
+        />
+      )}
+    </Moldura>
+  );
+}
+
+/** Pergunta de sim/não com explicação ao lado. */
+export function CampoInterruptor<T extends FieldValues>({
+  control,
+  name,
+  rotulo,
+  descricao,
+  className,
+}: Omit<Base<T>, "opcional">) {
+  return (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <Field orientation="horizontal" className={cn("items-start", className)}>
+          <Switch id={name} checked={Boolean(field.value)} onCheckedChange={field.onChange} className="mt-0.5" />
+          <div className="flex flex-col gap-0.5">
+            <FieldLabel htmlFor={name}>{rotulo}</FieldLabel>
+            {descricao && <FieldDescription>{descricao}</FieldDescription>}
+          </div>
+        </Field>
+      )}
+    />
+  );
+}
+
+/** Número com botões − e + grandes (bons para o dedo); também aceita digitar. */
+export function Contador({
+  id,
+  rotulo,
+  valor,
+  aoMudar,
+  minimo = 0,
+  maximo = 99,
+}: {
+  id: string;
+  rotulo: string;
+  valor: number;
+  aoMudar: (valor: number) => void;
+  minimo?: number;
+  maximo?: number;
+}) {
+  const limitar = (n: number) => Math.min(maximo, Math.max(minimo, Number.isFinite(n) ? n : minimo));
+  return (
+    <div className="flex flex-col gap-2">
+      <label htmlFor={id} className="text-sm font-medium">
+        {rotulo}
+      </label>
+      <div className="flex items-center gap-2">
+        <Button type="button" variant="outline" size="icon" aria-label={`Diminuir ${rotulo.toLowerCase()}`} disabled={valor <= minimo} onClick={() => aoMudar(limitar(valor - 1))}>
+          <Minus className="size-5" />
+        </Button>
+        <Input
+          id={id}
+          inputMode="numeric"
+          value={String(valor)}
+          onChange={(e) => aoMudar(limitar(Number(e.target.value.replace(/\D/g, "")) || minimo))}
+          className="w-16 text-center font-mono text-lg font-bold tabular-nums"
+        />
+        <Button type="button" variant="outline" size="icon" aria-label={`Aumentar ${rotulo.toLowerCase()}`} disabled={valor >= maximo} onClick={() => aoMudar(limitar(valor + 1))}>
+          <Plus className="size-5" />
+        </Button>
+      </div>
+    </div>
   );
 }
 

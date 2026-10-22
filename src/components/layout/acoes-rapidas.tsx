@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { BellPlus, FileSignature, HandCoins, type LucideIcon, Plus, ReceiptText, Wrench } from "lucide-react";
+import { BellPlus, FileSignature, HandCoins, type LucideIcon, Plus, ReceiptText, UserPlus, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -20,6 +20,7 @@ const ACOES: Acao[] = [
   { href: "/contratos", rotulo: "Novo contrato", detalhe: "Alugar um apartamento", icone: FileSignature },
   { href: "/financeiro", rotulo: "Lançar despesa", detalhe: "Conta de luz, IPTU, conserto…", icone: ReceiptText },
   { href: "/manutencoes", rotulo: "Abrir ordem de serviço", detalhe: "Algo precisa de conserto", icone: Wrench },
+  { href: "/inquilinos/novo", rotulo: "Cadastrar inquilino", detalhe: "Nome, contatos e documentos", icone: UserPlus },
   { href: "/lembretes", rotulo: "Novo lembrete", detalhe: "Para não esquecer", icone: BellPlus },
 ];
 

@@ -24,8 +24,11 @@ export async function exigirSessao() {
   return sessao;
 }
 
-export const exigirContexto = cache(async (): Promise<Contexto> => {
-  const { user, session } = await exigirSessao();
+/** Conta ativa do usuário, ou null (sem sessão ou ainda sem residencial). Não redireciona — serve às rotas de API. */
+export const obterContexto = cache(async (): Promise<Contexto | null> => {
+  const sessao = await obterSessao();
+  if (!sessao) return null;
+  const { user, session } = sessao;
 
   // A conta ativa vem da sessão; se ainda não houver (ex.: logo após o cadastro) ou se o vínculo
   // tiver sido removido, cai na primeira conta da qual o usuário é membro.
@@ -35,8 +38,7 @@ export const exigirContexto = cache(async (): Promise<Contexto> => {
         where: { userId: user.id, organizationId: session.activeOrganizationId },
       }))) ||
     (await db.member.findFirst({ where: { userId: user.id }, orderBy: { createdAt: "asc" } }));
-
-  if (!vinculo) redirect("/boas-vindas");
+  if (!vinculo) return null;
 
   return {
     usuario: { id: user.id, nome: user.name, email: user.email },
@@ -44,3 +46,11 @@ export const exigirContexto = cache(async (): Promise<Contexto> => {
     papel: "GESTOR",
   };
 });
+
+/** Para páginas e server actions: sem sessão vai para /entrar; sem residencial, para /boas-vindas. */
+export async function exigirContexto(): Promise<Contexto> {
+  const ctx = await obterContexto();
+  if (ctx) return ctx;
+  await exigirSessao();
+  redirect("/boas-vindas");
+}
