@@ -18,6 +18,7 @@ type Apto = {
   valorReferencia: number | null;
   quartos: number | null;
   areaM2: number | null;
+  inquilino: string | null;
 };
 
 type Visao = "mapa" | "lista";
@@ -103,7 +104,7 @@ export function PainelApartamentos({ aptos, residencial }: { aptos: Apto[]; resi
                 <span className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
                   <span className="text-sm text-muted-foreground">
                     {[
-                      nomeAndar(apto.andar),
+                      apto.inquilino ?? nomeAndar(apto.andar),
                       apto.quartos !== null && `${apto.quartos} ${apto.quartos === 1 ? "quarto" : "quartos"}`,
                       apto.areaM2 !== null && `${apto.areaM2} m²`,
                     ]

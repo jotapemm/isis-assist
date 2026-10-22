@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { FileSignature, Pencil } from "lucide-react";
+import { ChevronRight, FileSignature, Pencil } from "lucide-react";
 import { Bloco, Dados, VoltarPara } from "@/components/comum/blocos";
 import { EsqueletoBloco } from "@/components/comum/esqueleto";
 import { Avatar } from "@/components/layout/menu-usuario";
@@ -11,7 +11,7 @@ import { formatarData, formatarMoeda } from "@/lib/formatar";
 import { mascararCPF, mascararTelefone } from "@/lib/mascaras";
 import { AcoesInquilino } from "@/modulos/inquilinos/componentes/acoes-inquilino";
 import { BotaoLigar, BotaoWhatsApp } from "@/modulos/inquilinos/componentes/botoes-contato";
-import { Documentos } from "@/modulos/inquilinos/componentes/documentos";
+import { ListaDocumentos } from "@/modulos/arquivos/componentes/lista-documentos";
 import { obterInquilino } from "@/modulos/inquilinos/consultas";
 import { exigirContexto } from "@/server/contexto";
 
@@ -75,11 +75,39 @@ async function Conteudo({ params }: { params: PageProps<"/inquilinos/[id]">["par
           />
         </Bloco>
 
-        <Bloco titulo="Contrato">
-          <div className="flex items-start gap-3 text-muted-foreground">
-            <FileSignature className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
-            <p className="text-sm">O apartamento e o contrato aparecem aqui quando os contratos chegarem (Fase 2).</p>
-          </div>
+        <Bloco
+          titulo="Contratos"
+          acoes={
+            <Button asChild variant="ghost" size="sm">
+              <Link href={`/contratos/novo?inquilino=${inq.id}`}>
+                <FileSignature className="size-4" />
+                Novo contrato
+              </Link>
+            </Button>
+          }
+        >
+          {inq.contratos.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Ainda não aluga nenhum apartamento.</p>
+          ) : (
+            <ul className="divide-y">
+              {inq.contratos.map((c) => (
+                <li key={c.id}>
+                  <Link href={`/contratos/${c.id}`} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                    <span className="w-12 shrink-0 font-mono text-lg font-bold tabular-nums">{c.apartamento.identificacao}</span>
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className={c.status === "ATIVO" ? "font-medium text-livre" : "text-muted-foreground"}>
+                        {c.status === "ATIVO" ? "Mora aqui" : "Morou"}
+                      </span>
+                      <span className="text-sm text-muted-foreground tabular-nums">
+                        {formatarData(c.dataInicio)} a {formatarData(c.encerradoEm ?? c.dataFim)} · {formatarMoeda(c.valorAluguel)}
+                      </span>
+                    </span>
+                    <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </Bloco>
 
         <Bloco titulo="Contato de emergência">
@@ -109,7 +137,11 @@ async function Conteudo({ params }: { params: PageProps<"/inquilinos/[id]">["par
         </Bloco>
 
         <Bloco titulo="Documentos" className="lg:col-span-2">
-          <Documentos inquilinoId={inq.id} documentos={inq.arquivos} />
+          <ListaDocumentos
+            destino={{ categoria: "DOCUMENTO", inquilinoId: inq.id }}
+            documentos={inq.arquivos}
+            vazio="Nenhum documento ainda. Dá para tirar foto do RG ou anexar um PDF."
+          />
         </Bloco>
 
         {inq.observacoes && (

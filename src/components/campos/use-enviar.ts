@@ -13,6 +13,8 @@ export function useEnviar<T extends FieldValues>(
   form: UseFormReturn<T>,
   acao: (dados: T) => Promise<Resultado>,
   mensagemSucesso: string,
+  /** Formulário em passos: o campo com erro pode não estar na tela, então o aviso geral sempre aparece. */
+  { sempreMostrarErro = false }: { sempreMostrarErro?: boolean } = {},
 ) {
   const [pendente, iniciar] = useTransition();
   const [erro, setErro] = useState<string | null>(null);
@@ -30,7 +32,7 @@ export function useEnviar<T extends FieldValues>(
       }
       // Se o erro geral é o mesmo de um campo (ex.: CPF repetido), ele já aparece embaixo do campo.
       const mensagensDosCampos = Object.values(resultado.campos ?? {});
-      setErro(mensagensDosCampos.includes(resultado.erro) ? null : resultado.erro);
+      setErro(!sempreMostrarErro && mensagensDosCampos.includes(resultado.erro) ? null : resultado.erro);
       for (const [campo, mensagem] of Object.entries(resultado.campos ?? {})) {
         form.setError(campo as Path<T>, { message: mensagem });
       }

@@ -9,7 +9,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "db:subir": "prisma dev --name isis-assist --detach",
+    "db:subir": "node scripts/subir-banco.mjs",
     "db:migrar": "prisma migrate dev && prisma generate",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",

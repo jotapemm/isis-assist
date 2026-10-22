@@ -17,7 +17,7 @@ type Acao = { href: string; rotulo: string; detalhe: string; icone: LucideIcon }
 // Os destinos ganham as telas próprias nas fases de cada módulo (docs/PLANO.md §5).
 const ACOES: Acao[] = [
   { href: "/financeiro", rotulo: "Registrar pagamento", detalhe: "Um inquilino pagou", icone: HandCoins },
-  { href: "/contratos", rotulo: "Novo contrato", detalhe: "Alugar um apartamento", icone: FileSignature },
+  { href: "/contratos/novo", rotulo: "Novo contrato", detalhe: "Alugar um apartamento", icone: FileSignature },
   { href: "/financeiro", rotulo: "Lançar despesa", detalhe: "Conta de luz, IPTU, conserto…", icone: ReceiptText },
   { href: "/manutencoes", rotulo: "Abrir ordem de serviço", detalhe: "Algo precisa de conserto", icone: Wrench },
   { href: "/inquilinos/novo", rotulo: "Cadastrar inquilino", detalhe: "Nome, contatos e documentos", icone: UserPlus },

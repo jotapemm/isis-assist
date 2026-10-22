@@ -19,6 +19,19 @@ export async function obterInquilino(ctx: Contexto, id: string) {
     where: { id, organizationId: ctx.organizacaoId, arquivadoEm: null },
     include: {
       fiadores: { orderBy: { createdAt: "asc" }, take: 1 },
+      contratos: {
+        orderBy: { dataInicio: "desc" },
+        select: {
+          id: true,
+          status: true,
+          dataInicio: true,
+          dataFim: true,
+          encerradoEm: true,
+          valorAluguel: true,
+          diaVencimento: true,
+          apartamento: { select: { id: true, identificacao: true } },
+        },
+      },
       arquivos: {
         where: { categoria: "DOCUMENTO" },
         orderBy: { createdAt: "desc" },

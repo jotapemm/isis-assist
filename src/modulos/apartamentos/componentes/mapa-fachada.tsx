@@ -2,7 +2,14 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { nomeAndar, STATUS, type StatusApartamento } from "../status";
 
-export type JanelaApto = { id: string; identificacao: string; andar: number | null; status: StatusApartamento };
+export type JanelaApto = {
+  id: string;
+  identificacao: string;
+  andar: number | null;
+  status: StatusApartamento;
+  /** Nome de quem mora (contrato ativo); a janela mostra o primeiro nome. */
+  inquilino?: string | null;
+};
 
 /** Agrupa por andar, de cima para baixo — como se olha para o prédio. "Sem andar" fica por último. */
 function andaresDeCimaParaBaixo(aptos: JanelaApto[]) {
@@ -77,7 +84,7 @@ function Janela({ apto, apagada }: { apto: JanelaApto; apagada: boolean }) {
   return (
     <Link
       href={`/apartamentos/${apto.id}`}
-      aria-label={`Apartamento ${apto.identificacao}, ${info.rotulo}`}
+      aria-label={`Apartamento ${apto.identificacao}, ${info.rotulo}${apto.inquilino ? `, ${apto.inquilino}` : ""}`}
       className={cn(
         "flex h-full min-h-16 min-w-0 flex-col justify-between gap-1 rounded-lg border-2 px-2 py-1.5 transition-[opacity,box-shadow] outline-none hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/60 sm:min-h-20 sm:px-2.5 sm:py-2",
         info.fundo,
@@ -90,7 +97,7 @@ function Janela({ apto, apagada }: { apto: JanelaApto; apagada: boolean }) {
       </span>
       <span className={cn("flex min-w-0 items-center gap-1 text-xs font-semibold", info.texto)}>
         <Icone className="size-3.5 shrink-0" aria-hidden="true" />
-        <span className="hidden truncate sm:inline">{info.rotulo}</span>
+        <span className="hidden truncate sm:inline">{apto.inquilino ? apto.inquilino.split(" ")[0] : info.rotulo}</span>
       </span>
     </Link>
   );

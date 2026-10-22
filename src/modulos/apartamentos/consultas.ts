@@ -33,10 +33,15 @@ export async function listarApartamentos(ctx: Contexto) {
         take: 1,
         select: { id: true },
       },
+      contratos: { where: { status: "ATIVO" }, take: 1, select: { inquilino: { select: { nome: true } } } },
     },
   });
   return aptos
-    .map(({ arquivos, ...apto }) => ({ ...apto, capaId: arquivos[0]?.id ?? null }))
+    .map(({ arquivos, contratos, ...apto }) => ({
+      ...apto,
+      capaId: arquivos[0]?.id ?? null,
+      inquilino: contratos[0]?.inquilino.nome ?? null,
+    }))
     .sort((a, b) => (a.andar ?? -1) - (b.andar ?? -1) || compararIdentificacao(a.identificacao, b.identificacao));
 }
 
@@ -49,6 +54,19 @@ export async function obterApartamento(ctx: Contexto, id: string) {
         where: { categoria: "FOTO_APTO" },
         orderBy: [{ ordem: "asc" }, { createdAt: "asc" }],
         select: { id: true, nomeOriginal: true },
+      },
+      contratos: {
+        orderBy: { dataInicio: "desc" },
+        select: {
+          id: true,
+          status: true,
+          dataInicio: true,
+          dataFim: true,
+          encerradoEm: true,
+          valorAluguel: true,
+          diaVencimento: true,
+          inquilino: { select: { id: true, nome: true, telefone: true } },
+        },
       },
       historicoStatus: {
         orderBy: { createdAt: "desc" },

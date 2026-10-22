@@ -12,7 +12,9 @@ import path from "node:path";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { hashPassword } from "better-auth/crypto";
 import { PrismaClient } from "../../src/generated/prisma/client";
-import { APARTAMENTOS, celularFicticio, cpfFicticio, emailFicticio, INQUILINOS, rgFicticio } from "./dados";
+import { fimDoContrato, somarDias, somarMeses } from "../../src/lib/datas";
+import { hojeISO, paraDataCalendario } from "../../src/lib/formatar";
+import { APARTAMENTOS, celularFicticio, CONTRATOS, cpfFicticio, emailFicticio, INQUILINOS, rgFicticio } from "./dados";
 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 
@@ -79,18 +81,21 @@ async function main() {
   const propriedade = await db.propriedade.findFirstOrThrow({ where: { organizationId } });
   await semearApartamentos(organizationId, propriedade.id, userId);
   await semearInquilinos(organizationId);
+  await semearContratos(organizationId, userId);
 
   console.log(`Conta de demonstração pronta: ${EMAIL} (senha em SEED_SENHA no .env).`);
 }
 
 const DIA = 24 * 60 * 60 * 1000;
+/** Momento ao meio-dia de Brasília (15h UTC) de uma data — meia-noite UTC apareceria como 21h do dia anterior. */
+const meioDia = (iso: string) => new Date(`${iso}T15:00:00Z`);
 const diasAtras = (dias: number) => new Date(Date.now() - dias * DIA);
 
 /** Fase 1: os 12 aptos, cada um com o histórico que explica o status atual. */
 async function semearApartamentos(organizationId: string, propriedadeId: string, usuarioId: string) {
   for (const [i, apto] of APARTAMENTOS.entries()) {
     const doisQuartos = apto.identificacao.endsWith("04");
-    const cadastradoEm = diasAtras(400 - i);
+    const cadastradoEm = diasAtras(900 - i);
     await db.apartamento.create({
       data: {
         organizationId,
@@ -108,16 +113,17 @@ async function semearApartamentos(organizationId: string, propriedadeId: string,
         historicoStatus: {
           create: [
             { organizationId, para: "LIVRE", motivo: "Cadastro do apartamento", usuarioId, createdAt: cadastradoEm },
-            ...(apto.status === "LIVRE"
+            // Ocupados ganham o histórico pelo contrato (semearContratos).
+            ...(apto.status === "LIVRE" || apto.status === "OCUPADO"
               ? []
               : [
                   {
                     organizationId,
                     de: "LIVRE" as const,
                     para: apto.status,
-                    motivo: apto.motivo ?? "Inquilino mudou",
+                    motivo: apto.motivo,
                     usuarioId,
-                    createdAt: diasAtras(apto.status === "OCUPADO" ? 300 - i * 15 : 6 + i),
+                    createdAt: diasAtras(6 + i),
                   },
                 ]),
           ],
@@ -150,6 +156,85 @@ async function semearInquilinos(organizationId: string) {
             ? { create: { organizationId, nome: inq.fiador, cpf: cpfFicticio(), telefone: celularFicticio() } }
             : undefined,
       },
+    });
+  }
+}
+
+/**
+ * Fase 2: contratos dos 8 aptos ocupados e um encerrado (203). As datas são relativas a hoje para a
+ * demonstração sempre ter um reajuste chegando, um atrasado e um contrato terminando.
+ * Os reajustes passados são registros de exemplo — índices reais vêm do Banco Central na hora de aplicar.
+ */
+async function semearContratos(organizationId: string, usuarioId: string) {
+  const hoje = hojeISO();
+  const apto = async (identificacao: string) =>
+    db.apartamento.findFirstOrThrow({ where: { organizationId, identificacao }, select: { id: true, valorReferencia: true } });
+  const inquilino = async (nome: string) =>
+    db.inquilino.findFirstOrThrow({ where: { organizationId, nome }, select: { id: true, nome: true, fiadores: { select: { id: true } } } });
+
+  for (const c of CONTRATOS) {
+    const inicio = somarDias(somarMeses(hoje, -c.mesesAtras), c.ajusteDias ?? 0);
+    const fim = fimDoContrato(inicio, c.meses);
+    const [a, inq] = await Promise.all([apto(c.apto), inquilino(c.inquilino)]);
+    const valorInicial = a.valorReferencia ?? 140000;
+
+    // Reajustes já aplicados: um por aniversário que passou, exceto o que a demo deixa atrasado.
+    let valor = valorInicial;
+    const reajustes = c.reajustes.map((percentual, i) => {
+      const dataBase = somarMeses(inicio, 12 * (i + 1));
+      const novo = Math.round(valor * (1 + percentual / 100));
+      const registro = { dataBase, percentual, valorAnterior: valor, valorNovo: novo };
+      valor = novo;
+      return registro;
+    });
+    const encerrado = c.encerrado ?? false;
+    const proximoReajuste = c.indice === "NENHUM" || encerrado ? null : somarMeses(inicio, 12 * (c.reajustes.length + 1));
+
+    await db.contrato.create({
+      data: {
+        organizationId,
+        apartamentoId: a.id,
+        inquilinoId: inq.id,
+        fiadorId: inq.fiadores[0]?.id ?? null,
+        dataInicio: paraDataCalendario(inicio),
+        dataFim: paraDataCalendario(fim),
+        valorAluguel: valor,
+        valorInicial,
+        diaVencimento: c.dia,
+        valorCaucao: c.caucao ? valorInicial * c.caucao : null,
+        indiceReajuste: c.indice,
+        percentualFixo: c.indice === "FIXO" ? 5 : null,
+        proximoReajusteEm: proximoReajuste ? paraDataCalendario(proximoReajuste) : null,
+        status: encerrado ? "ENCERRADO" : "ATIVO",
+        encerradoEm: encerrado ? paraDataCalendario(fim) : null,
+        motivoEncerramento: encerrado ? "Fim do prazo" : null,
+        caucaoDevolvidaEm: encerrado && c.caucao ? paraDataCalendario(fim) : null,
+        valorCaucaoDevolvido: encerrado && c.caucao ? valorInicial * c.caucao : null,
+        createdAt: meioDia(inicio),
+        reajustes: {
+          create: reajustes.map((r) => ({
+            organizationId,
+            dataBase: paraDataCalendario(r.dataBase),
+            indice: c.indice,
+            percentual: r.percentual,
+            valorAnterior: r.valorAnterior,
+            valorNovo: r.valorNovo,
+            observacao: r.percentual === 0 ? "Índice negativo; valor mantido" : null,
+            aplicadoPorId: usuarioId,
+            createdAt: meioDia(r.dataBase),
+          })),
+        },
+      },
+    });
+
+    // Histórico do apto: entrou pelo contrato; o encerrado devolve o apto para Livre.
+    await db.historicoStatus.createMany({
+      data: [
+        { organizationId, apartamentoId: a.id, de: "LIVRE", para: "OCUPADO", origem: "CONTRATO", motivo: `Contrato com ${inq.nome}`, usuarioId, createdAt: meioDia(inicio) },
+        ...(encerrado
+          ? [{ organizationId, apartamentoId: a.id, de: "OCUPADO" as const, para: "LIVRE" as const, origem: "CONTRATO" as const, motivo: `Fim do contrato com ${inq.nome}`, usuarioId, createdAt: meioDia(fim) }]
+          : []),
+      ],
     });
   }
 }

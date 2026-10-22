@@ -7,11 +7,13 @@ export const TIPOS_DOCUMENTO = [...TIPOS_IMAGEM, "application/pdf"] as const;
 
 export type DestinoArquivo =
   | { categoria: "FOTO_APTO"; apartamentoId: string }
-  | { categoria: "DOCUMENTO"; inquilinoId: string };
+  | { categoria: "DOCUMENTO"; inquilinoId: string }
+  | { categoria: "CONTRATO_PDF"; contratoId: string };
 
 export const REGRAS = {
   FOTO_APTO: { tipos: TIPOS_IMAGEM as readonly string[], tamanhoMaximo: 8 * MB, aceitar: "image/*" },
   DOCUMENTO: { tipos: TIPOS_DOCUMENTO as readonly string[], tamanhoMaximo: 10 * MB, aceitar: "image/*,application/pdf" },
+  CONTRATO_PDF: { tipos: TIPOS_DOCUMENTO as readonly string[], tamanhoMaximo: 15 * MB, aceitar: "application/pdf,image/*" },
 } as const;
 
 /** Frase de erro para mostrar à usuária, ou null se o arquivo pode ser enviado. */

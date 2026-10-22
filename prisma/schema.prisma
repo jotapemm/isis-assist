@@ -26,6 +26,7 @@ model User {
   members        Member[]
   invitations    Invitation[]
   mudancasStatus HistoricoStatus[]
+  reajustes      Reajuste[]
 
   @@map("user")
 }
@@ -92,6 +93,7 @@ model Organization {
   propriedades Propriedade[]
   apartamentos Apartamento[]
   inquilinos   Inquilino[]
+  contratos    Contrato[]
   arquivos     Arquivo[]
 
   @@map("organization")
@@ -213,6 +215,7 @@ model Apartamento {
   updatedAt       DateTime          @updatedAt
   historicoStatus HistoricoStatus[]
   arquivos        Arquivo[]
+  contratos       Contrato[]
 
   @@unique([propriedadeId, identificacao])
   @@index([organizationId])
@@ -267,6 +270,7 @@ model Inquilino {
   updatedAt                   DateTime     @updatedAt
   fiadores                    Fiador[]
   arquivos                    Arquivo[]
+  contratos                   Contrato[]
 
   @@unique([organizationId, cpf])
   @@index([organizationId])
@@ -274,17 +278,18 @@ model Inquilino {
 }
 
 model Fiador {
-  id             String    @id @default(cuid())
+  id             String     @id @default(cuid())
   organizationId String
   inquilinoId    String
-  inquilino      Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  inquilino      Inquilino  @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
   nome           String
   cpf            String?
   telefone       String?
   email          String?
   endereco       String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  contratos      Contrato[]
 
   @@index([inquilinoId])
   @@map("fiador")
@@ -315,11 +320,110 @@ model Arquivo {
   apartamento    Apartamento?     @relation(fields: [apartamentoId], references: [id], onDelete: Cascade)
   inquilinoId    String?
   inquilino      Inquilino?       @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  contratoId     String?
+  contrato       Contrato?        @relation(fields: [contratoId], references: [id], onDelete: Cascade)
   enviadoPorId   String?
   createdAt      DateTime         @default(now())
 
   @@index([organizationId])
   @@index([apartamentoId])
   @@index([inquilinoId])
+  @@index([contratoId])
   @@map("arquivo")
+}
+
+// ─── Contratos ───
+
+enum StatusContrato {
+  ATIVO
+  ENCERRADO
+}
+
+/// Índice do reajuste anual. FIXO usa `percentualFixo`; NENHUM não reajusta.
+enum IndiceReajuste {
+  IGPM
+  IPCA
+  FIXO
+  NENHUM
+}
+
+/// Liga um inquilino a um apartamento. Um apto só tem um contrato ATIVO por vez — garantido na ação de
+/// criar, com a linha do apto travada (SELECT … FOR UPDATE) durante a transação.
+/// Contrato é registro financeiro: nunca é apagado (NoAction impede apagar apto/inquilino que tenha contrato).
+model Contrato {
+  id                    String         @id @default(cuid())
+  organizationId        String
+  organization          Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  apartamentoId         String
+  apartamento           Apartamento    @relation(fields: [apartamentoId], references: [id], onDelete: NoAction)
+  inquilinoId           String
+  inquilino             Inquilino      @relation(fields: [inquilinoId], references: [id], onDelete: NoAction)
+  fiadorId              String?
+  fiador                Fiador?        @relation(fields: [fiadorId], references: [id], onDelete: SetNull)
+  dataInicio            DateTime       @db.Date
+  dataFim               DateTime       @db.Date
+  /// Aluguel em vigor (muda a cada reajuste), em centavos.
+  valorAluguel          Int
+  /// Aluguel na assinatura, em centavos.
+  valorInicial          Int
+  /// 1 a 31; em meses mais curtos vence no último dia.
+  diaVencimento         Int
+  valorCaucao           Int?
+  caucaoDevolvidaEm     DateTime?      @db.Date
+  valorCaucaoDevolvido  Int?
+  indiceReajuste        IndiceReajuste @default(IGPM)
+  percentualFixo        Decimal?       @db.Decimal(6, 3)
+  /// Aniversário em que o próximo reajuste vence (vazio se NENHUM ou encerrado).
+  proximoReajusteEm     DateTime?      @db.Date
+  /// Vazios = usa as regras da conta (Configuracao).
+  multaPercentual       Decimal?       @db.Decimal(5, 2)
+  jurosMensalPercentual Decimal?       @db.Decimal(5, 2)
+  status                StatusContrato @default(ATIVO)
+  encerradoEm           DateTime?      @db.Date
+  motivoEncerramento    String?
+  observacoes           String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  reajustes             Reajuste[]
+  arquivos              Arquivo[]
+
+  @@index([organizationId, status])
+  @@index([apartamentoId])
+  @@index([inquilinoId])
+  @@map("contrato")
+}
+
+model Reajuste {
+  id             String         @id @default(cuid())
+  organizationId String
+  contratoId     String
+  contrato       Contrato       @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  /// Aniversário do contrato a que este reajuste se refere.
+  dataBase       DateTime       @db.Date
+  indice         IndiceReajuste
+  /// Variação acumulada usada (ex.: 4.2731 = 4,2731%). 0 quando a usuária manteve o valor.
+  percentual     Decimal        @db.Decimal(8, 4)
+  valorAnterior  Int
+  valorNovo      Int
+  observacao     String?
+  aplicadoPorId  String?
+  aplicadoPor    User?          @relation(fields: [aplicadoPorId], references: [id], onDelete: SetNull)
+  createdAt      DateTime       @default(now())
+
+  @@index([contratoId, dataBase])
+  @@map("reajuste")
+}
+
+/// Variação mensal oficial (Banco Central, SGS: IGP-M = série 189, IPCA = 433). Global, sem conta:
+/// é o mesmo número para todo mundo. Só guarda o que veio da fonte — nunca valor inventado.
+model IndiceEconomico {
+  id          String         @id @default(cuid())
+  indice      IndiceReajuste
+  /// Primeiro dia do mês de referência.
+  competencia DateTime       @db.Date
+  variacao    Decimal        @db.Decimal(8, 4)
+  createdAt   DateTime       @default(now())
+
+  @@unique([indice, competencia])
+  @@map("indice_economico")
 }

@@ -5,19 +5,31 @@ import { FileImage, FileText, Paperclip, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { formatarData } from "@/lib/formatar";
-import { apagarArquivo } from "@/modulos/arquivos/acoes";
-import { MB, REGRAS } from "@/modulos/arquivos/regras";
-import { useEnvioArquivos } from "@/modulos/arquivos/use-envio";
-import type { InquilinoDetalhe } from "../consultas";
+import { apagarArquivo } from "../acoes";
+import { type DestinoArquivo, MB, REGRAS } from "../regras";
+import { useEnvioArquivos } from "../use-envio";
 
-type Documento = InquilinoDetalhe["arquivos"][number];
+type Documento = { id: string; nomeOriginal: string; tipoMime: string; tamanhoBytes: number; createdAt: Date };
 
 const tamanho = (bytes: number) =>
   bytes >= MB ? `${(bytes / MB).toFixed(1).replace(".", ",")} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 
-/** RG, CPF, comprovante de renda, de residência… Abre num toque; apagar pede confirmação na própria linha. */
-export function Documentos({ inquilinoId, documentos }: { inquilinoId: string; documentos: Documento[] }) {
-  const { enviar, enviando } = useEnvioArquivos({ categoria: "DOCUMENTO", inquilinoId });
+/**
+ * Documentos de um inquilino (RG, comprovantes…) ou o PDF de um contrato.
+ * Abre num toque; apagar pede confirmação na própria linha.
+ */
+export function ListaDocumentos({
+  destino,
+  documentos,
+  vazio,
+  rotuloEnviar = "Anexar documento",
+}: {
+  destino: DestinoArquivo;
+  documentos: Documento[];
+  vazio: string;
+  rotuloEnviar?: string;
+}) {
+  const { enviar, enviando } = useEnvioArquivos(destino);
   const [confirmando, setConfirmando] = useState<string | null>(null);
   const [apagando, iniciar] = useTransition();
 
@@ -33,7 +45,7 @@ export function Documentos({ inquilinoId, documentos }: { inquilinoId: string; d
   return (
     <div className="flex flex-col gap-3">
       {documentos.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Nenhum documento ainda. Dá para tirar foto do RG ou anexar um PDF.</p>
+        <p className="text-sm text-muted-foreground">{vazio}</p>
       ) : (
         <ul className="divide-y rounded-xl border">
           {documentos.map((doc) => {
@@ -74,10 +86,10 @@ export function Documentos({ inquilinoId, documentos }: { inquilinoId: string; d
 
       <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 self-start rounded-lg border border-input bg-background px-4 text-[0.95rem] font-medium hover:bg-muted has-focus-visible:ring-3 has-focus-visible:ring-ring/50 md:h-10">
         <Paperclip className="size-4" aria-hidden="true" />
-        {enviando ? `Enviando ${enviando.atual} de ${enviando.total}…` : "Anexar documento"}
+        {enviando ? `Enviando ${enviando.atual} de ${enviando.total}…` : rotuloEnviar}
         <input
           type="file"
-          accept={REGRAS.DOCUMENTO.aceitar}
+          accept={REGRAS[destino.categoria].aceitar}
           multiple
           className="sr-only"
           disabled={Boolean(enviando)}

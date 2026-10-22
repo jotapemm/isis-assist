@@ -1,8 +1,31 @@
 import { randomUUID } from "node:crypto";
-import { extensao, problemaNoArquivo } from "@/modulos/arquivos/regras";
+import { type DestinoArquivo, extensao, problemaNoArquivo } from "@/modulos/arquivos/regras";
 import { armazenamento } from "@/server/armazenamento";
-import { obterContexto } from "@/server/contexto";
+import { type Contexto, obterContexto } from "@/server/contexto";
 import { db } from "@/server/db";
+
+const CATEGORIAS = ["FOTO_APTO", "DOCUMENTO", "CONTRATO_PDF"] as const satisfies DestinoArquivo["categoria"][];
+type Categoria = (typeof CATEGORIAS)[number];
+
+/** Cada categoria pertence a um tipo de registro; o registro precisa ser desta conta. */
+async function vinculoDoDono(ctx: Contexto, categoria: Categoria, dados: FormData) {
+  const conta = { organizationId: ctx.organizacaoId };
+  const id = (campo: string) => String(dados.get(campo) ?? "");
+  switch (categoria) {
+    case "FOTO_APTO": {
+      const apto = await db.apartamento.findFirst({ where: { id: id("apartamentoId"), ...conta }, select: { id: true } });
+      return apto && { apartamentoId: apto.id };
+    }
+    case "DOCUMENTO": {
+      const inquilino = await db.inquilino.findFirst({ where: { id: id("inquilinoId"), ...conta }, select: { id: true } });
+      return inquilino && { inquilinoId: inquilino.id };
+    }
+    case "CONTRATO_PDF": {
+      const contrato = await db.contrato.findFirst({ where: { id: id("contratoId"), ...conta }, select: { id: true } });
+      return contrato && { contratoId: contrato.id };
+    }
+  }
+}
 
 /**
  * Envio de arquivo (multipart). Fica numa rota própria — e não numa server action — porque as
@@ -15,26 +38,21 @@ export async function POST(request: Request) {
   const dados = await request.formData();
   const arquivo = dados.get("arquivo");
   const categoria = dados.get("categoria");
-  if (!(arquivo instanceof File) || (categoria !== "FOTO_APTO" && categoria !== "DOCUMENTO")) {
+  if (!(arquivo instanceof File) || !CATEGORIAS.includes(categoria as Categoria)) {
     return Response.json({ erro: "Envio incompleto. Tente de novo." }, { status: 400 });
   }
+  const cat = categoria as Categoria;
 
-  const problema = problemaNoArquivo(categoria, arquivo.type, arquivo.size);
+  const problema = problemaNoArquivo(cat, arquivo.type, arquivo.size);
   if (problema) return Response.json({ erro: problema }, { status: 400 });
 
-  // O dono do arquivo precisa ser desta conta.
-  const donoId = String(dados.get(categoria === "FOTO_APTO" ? "apartamentoId" : "inquilinoId") ?? "");
-  const dono =
-    categoria === "FOTO_APTO"
-      ? await db.apartamento.findFirst({ where: { id: donoId, organizationId: ctx.organizacaoId }, select: { id: true } })
-      : await db.inquilino.findFirst({ where: { id: donoId, organizationId: ctx.organizacaoId }, select: { id: true } });
-  if (!dono) return Response.json({ erro: "Não encontrei onde guardar este arquivo." }, { status: 404 });
+  const vinculo = await vinculoDoDono(ctx, cat, dados);
+  if (!vinculo) return Response.json({ erro: "Não encontrei onde guardar este arquivo." }, { status: 404 });
 
-  const chave = `${ctx.organizacaoId}/${categoria.toLowerCase()}/${randomUUID()}.${extensao(arquivo.type)}`;
+  const chave = `${ctx.organizacaoId}/${cat.toLowerCase()}/${randomUUID()}.${extensao(arquivo.type)}`;
   await armazenamento().salvar(chave, new Uint8Array(await arquivo.arrayBuffer()));
 
-  const vinculo = categoria === "FOTO_APTO" ? { apartamentoId: dono.id } : { inquilinoId: dono.id };
-  const ordem = await db.arquivo.count({ where: { organizationId: ctx.organizacaoId, categoria, ...vinculo } });
+  const ordem = await db.arquivo.count({ where: { organizationId: ctx.organizacaoId, categoria: cat, ...vinculo } });
   const registro = await db.arquivo.create({
     data: {
       organizationId: ctx.organizacaoId,
@@ -42,7 +60,7 @@ export async function POST(request: Request) {
       nomeOriginal: arquivo.name.slice(0, 200) || "arquivo",
       tipoMime: arquivo.type,
       tamanhoBytes: arquivo.size,
-      categoria,
+      categoria: cat,
       ordem,
       enviadoPorId: ctx.usuario.id,
       ...vinculo,

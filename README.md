@@ -23,6 +23,8 @@ npm run dev                 # http://localhost:3000
 
 **Fotos e documentos em desenvolvimento:** ficam na pasta `.armazenamento/` (fora do git). O seed apaga os da conta de demonstração.
 
+**Índices de reajuste:** IGP-M e IPCA vêm da API pública do Banco Central (SGS) na hora de aplicar o reajuste e ficam guardados no banco. Sem internet, a tela pede o percentual à mão.
+
 **"Esqueci a senha" em desenvolvimento:** sem `RESEND_API_KEY`, o e-mail com o link aparece no terminal do `npm run dev`.
 
 **Testar no celular:** o servidor de dev também responde no IP da rede (aparece como "Network" ao iniciar).
@@ -36,8 +38,8 @@ Para instalar como app (PWA) é preciso HTTPS — isso entra no deploy.
 | `npm run build` | Build de produção (gera o cliente Prisma antes) |
 | `npm test` | Testes (Vitest) |
 | `npm run typecheck` / `npm run lint` | Tipos e lint |
-| `npm run db:subir` | Sobe o Postgres local do Prisma em segundo plano |
-| `npm run db:migrar` | Cria/aplica migrações e gera o cliente Prisma |
+| `npm run db:subir` | Sobe o Postgres local do Prisma em segundo plano (se já estiver no ar, só avisa) |
+| `npm run db:migrar` | Aplica migrações e gera o cliente Prisma. Para criar uma nova: `npx prisma migrate dev --name nome` e depois `npx prisma generate` |
 | `npm run db:seed` | Recria a conta de demonstração |
 | `npm run db:studio` | Abre o Prisma Studio para olhar o banco |
 | `npm run icones` | Regera os ícones do PWA a partir da marca |

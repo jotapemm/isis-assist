@@ -106,6 +106,8 @@ export async function editarInquilino(id: string, entrada: unknown): Promise<Res
 
 export async function arquivarInquilino(id: string): Promise<Resultado> {
   const ctx = await exigirContexto();
+  const ativo = await db.contrato.findFirst({ where: { organizationId: ctx.organizacaoId, inquilinoId: id, status: "ATIVO" } });
+  if (ativo) return falha("Este inquilino tem contrato ativo. Encerre o contrato antes de arquivar.");
   const { count } = await db.inquilino.updateMany({
     where: { id, organizationId: ctx.organizacaoId, arquivadoEm: null },
     data: { arquivadoEm: new Date() },

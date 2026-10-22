@@ -65,6 +65,39 @@ export const INQUILINOS = [
   { nome: "Marcos Vinícius Teixeira", profissao: "Engenheiro civil", renda: 8800_00, nascimento: "1985-07-17", emergencia: ["Luciana Teixeira", "Esposa"] },
 ] as const;
 
+type Indice = "IGPM" | "IPCA" | "FIXO" | "NENHUM";
+
+/**
+ * Contratos da demonstração. `mesesAtras` + `ajusteDias` = início; `reajustes` = percentuais já aplicados
+ * em cada aniversário (0 = valor mantido).
+ */
+export const CONTRATOS: {
+  apto: string;
+  inquilino: string;
+  mesesAtras: number;
+  ajusteDias?: number;
+  meses: number;
+  indice: Indice;
+  dia: number;
+  caucao: number;
+  reajustes: number[];
+  encerrado?: boolean;
+}[] = [
+  { apto: "101", inquilino: "Ana Paula Ferreira", mesesAtras: 18, meses: 30, indice: "IGPM", dia: 5, caucao: 1, reajustes: [3.92] },
+  // Reajuste chegando: o aniversário é daqui a 12 dias.
+  { apto: "102", inquilino: "Carlos Eduardo Lima", mesesAtras: 12, ajusteDias: 12, meses: 30, indice: "IPCA", dia: 10, caucao: 2, reajustes: [] },
+  // Reajuste atrasado: o segundo aniversário passou há 5 dias e ainda não foi aplicado.
+  { apto: "103", inquilino: "Juliana Martins Rocha", mesesAtras: 24, ajusteDias: -5, meses: 36, indice: "IGPM", dia: 10, caucao: 0, reajustes: [4.18] },
+  { apto: "201", inquilino: "Rafael Oliveira Santos", mesesAtras: 5, meses: 12, indice: "FIXO", dia: 15, caucao: 1, reajustes: [] },
+  // Termina daqui a 40 dias.
+  { apto: "202", inquilino: "Fernanda Costa Ribeiro", mesesAtras: 12, ajusteDias: 41, meses: 12, indice: "IGPM", dia: 5, caucao: 1, reajustes: [] },
+  { apto: "204", inquilino: "Thiago Almeida Pereira", mesesAtras: 8, meses: 30, indice: "IGPM", dia: 10, caucao: 3, reajustes: [] },
+  { apto: "303", inquilino: "Beatriz Souza Carvalho", mesesAtras: 2, meses: 12, indice: "IPCA", dia: 20, caucao: 1, reajustes: [] },
+  { apto: "304", inquilino: "Lucas Gabriel Nunes", mesesAtras: 15, meses: 30, indice: "IGPM", dia: 10, caucao: 2, reajustes: [0] },
+  // Quem morou no 203 antes: contrato de 24 meses que terminou há ~2 meses.
+  { apto: "203", inquilino: "Patrícia Gomes Barbosa", mesesAtras: 26, meses: 24, indice: "IGPM", dia: 10, caucao: 1, reajustes: [5.06], encerrado: true },
+];
+
 export const emailFicticio = (nome: string) =>
   `${nome
     .normalize("NFD")

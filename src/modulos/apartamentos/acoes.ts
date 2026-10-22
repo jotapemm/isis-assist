@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { falha, falhaDeValidacao, sucesso, type Resultado } from "@/lib/resultado";
 import { exigirContexto } from "@/server/contexto";
 import { db } from "@/server/db";
+import { bloqueioPorContrato } from "../contratos/consultas";
 import { propriedadePrincipal } from "./consultas";
 import { esquemaApartamento, esquemaLote, esquemaMudarStatus, textoParaInteiro } from "./esquemas";
 import { gerarIdentificacoes } from "./lote";
@@ -130,6 +131,8 @@ export async function mudarStatus(id: string, entrada: unknown): Promise<Resulta
   });
   if (!apto) return falha("Esse apartamento não existe mais.");
   if (apto.status === dados.data.status) return falha(`O apartamento já está como ${STATUS[apto.status].rotulo}.`);
+  const bloqueio = await bloqueioPorContrato(ctx.organizacaoId, apto.id, dados.data.status);
+  if (bloqueio) return falha(bloqueio);
 
   await db.$transaction([
     db.apartamento.update({ where: { id: apto.id }, data: { status: dados.data.status } }),
@@ -150,6 +153,8 @@ export async function mudarStatus(id: string, entrada: unknown): Promise<Resulta
 
 export async function arquivarApartamento(id: string): Promise<Resultado> {
   const ctx = await exigirContexto();
+  const ativo = await db.contrato.findFirst({ where: { organizationId: ctx.organizacaoId, apartamentoId: id, status: "ATIVO" } });
+  if (ativo) return falha("Este apto tem contrato ativo. Encerre o contrato antes de arquivar.");
   const { count } = await db.apartamento.updateMany({
     where: { id, organizationId: ctx.organizacaoId, arquivadoEm: null },
     data: { arquivadoEm: new Date() },

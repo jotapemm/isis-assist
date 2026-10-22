@@ -1,17 +1,20 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { FileSignature } from "lucide-react";
+import Link from "next/link";
+import { ChevronRight, FileSignature } from "lucide-react";
 import { Bloco, Dados, VoltarPara } from "@/components/comum/blocos";
 import { EsqueletoBloco } from "@/components/comum/esqueleto";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatarMoeda } from "@/lib/formatar";
+import { Button } from "@/components/ui/button";
+import { formatarData, formatarMoeda } from "@/lib/formatar";
 import { AcoesApartamento } from "@/modulos/apartamentos/componentes/acoes-apartamento";
 import { GaleriaFotos } from "@/modulos/apartamentos/componentes/galeria-fotos";
 import { HistoricoStatus } from "@/modulos/apartamentos/componentes/historico-status";
 import { MudarStatus } from "@/modulos/apartamentos/componentes/mudar-status";
 import { obterApartamento } from "@/modulos/apartamentos/consultas";
 import { nomeAndar } from "@/modulos/apartamentos/status";
+import { BotaoWhatsApp } from "@/modulos/inquilinos/componentes/botoes-contato";
 import { exigirContexto } from "@/server/contexto";
 
 export const metadata: Metadata = { title: "Apartamento" };
@@ -33,6 +36,7 @@ async function Conteudo({ params }: { params: PageProps<"/apartamentos/[id]">["p
   const apto = await obterApartamento(ctx, id);
   if (!apto) notFound();
 
+  const contratoAtivo = apto.contratos.find((c) => c.status === "ATIVO");
   const subtitulo = [
     nomeAndar(apto.andar),
     apto.bloco && `Bloco ${apto.bloco}`,
@@ -59,17 +63,44 @@ async function Conteudo({ params }: { params: PageProps<"/apartamentos/[id]">["p
       <Tabs defaultValue="resumo">
         <TabsList className="mb-4">
           <TabsTrigger value="resumo">Resumo</TabsTrigger>
+          <TabsTrigger value="inquilinos">Inquilinos</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
         </TabsList>
 
         <TabsContent value="resumo" className="grid gap-4 lg:grid-cols-2">
-          <Bloco titulo="Inquilino atual">
-            <div className="flex items-start gap-3 text-muted-foreground">
-              <FileSignature className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
-              <p className="text-sm">
-                Sem contrato ativo. Quando os contratos chegarem (Fase 2), o inquilino e o vencimento aparecem aqui.
-              </p>
-            </div>
+          <Bloco
+            titulo="Inquilino atual"
+            acoes={contratoAtivo && <BotaoWhatsApp telefone={contratoAtivo.inquilino.telefone} nome={contratoAtivo.inquilino.nome} compacto />}
+          >
+            {contratoAtivo ? (
+              <div className="flex flex-col gap-3">
+                <div>
+                  <Link href={`/inquilinos/${contratoAtivo.inquilino.id}`} className="text-lg font-medium underline-offset-4 hover:underline">
+                    {contratoAtivo.inquilino.nome}
+                  </Link>
+                  <p className="text-sm text-muted-foreground tabular-nums">
+                    {formatarMoeda(contratoAtivo.valorAluguel)} · vence dia {contratoAtivo.diaVencimento} · até{" "}
+                    {formatarData(contratoAtivo.dataFim)}
+                  </p>
+                </div>
+                <Button asChild variant="outline" className="self-start">
+                  <Link href={`/contratos/${contratoAtivo.id}`}>
+                    <FileSignature className="size-4" />
+                    Ver contrato
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <p className="text-sm text-muted-foreground">Sem contrato ativo.</p>
+                <Button asChild className="self-start">
+                  <Link href={`/contratos/novo?apartamento=${apto.id}`}>
+                    <FileSignature className="size-4" />
+                    Alugar este apartamento
+                  </Link>
+                </Button>
+              </div>
+            )}
           </Bloco>
 
           <Bloco titulo="Dados">
@@ -86,6 +117,33 @@ async function Conteudo({ params }: { params: PageProps<"/apartamentos/[id]">["p
 
           <Bloco titulo="Fotos" className="lg:col-span-2">
             <GaleriaFotos apartamentoId={apto.id} identificacao={apto.identificacao} fotos={apto.arquivos} />
+          </Bloco>
+        </TabsContent>
+
+        <TabsContent value="inquilinos">
+          <Bloco titulo="Quem morou aqui">
+            {apto.contratos.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum contrato ainda.</p>
+            ) : (
+              <ul className="divide-y">
+                {apto.contratos.map((c) => (
+                  <li key={c.id}>
+                    <Link href={`/contratos/${c.id}`} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="font-medium">
+                          {c.inquilino.nome}
+                          {c.status === "ATIVO" && <span className="ml-2 text-sm font-normal text-livre">mora aqui</span>}
+                        </span>
+                        <span className="text-sm text-muted-foreground tabular-nums">
+                          {formatarData(c.dataInicio)} a {formatarData(c.encerradoEm ?? c.dataFim)} · {formatarMoeda(c.valorAluguel)}
+                        </span>
+                      </span>
+                      <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
           </Bloco>
         </TabsContent>
 
