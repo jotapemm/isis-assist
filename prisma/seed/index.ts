@@ -3,7 +3,7 @@
  * Uso: npm run db:seed   (refaz do zero a conta de demonstração; não mexe em outras contas)
  *
  * Cresce a cada fase: acesso, conta e residencial (Fase 0); 12 apartamentos com histórico e
- * 10 inquilinos (Fase 1); depois contratos, 12 meses de pagamentos, etc.
+ * 10 inquilinos (Fase 1); contratos e reajustes (Fase 2); 12 meses de aluguéis, recibos e despesas (Fase 3).
  */
 import "dotenv/config";
 import { randomUUID } from "node:crypto";
@@ -13,8 +13,20 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { hashPassword } from "better-auth/crypto";
 import { PrismaClient } from "../../src/generated/prisma/client";
 import { fimDoContrato, somarDias, somarMeses } from "../../src/lib/datas";
-import { hojeISO, paraDataCalendario } from "../../src/lib/formatar";
-import { APARTAMENTOS, celularFicticio, CONTRATOS, cpfFicticio, emailFicticio, INQUILINOS, rgFicticio } from "./dados";
+import { hojeISO, isoDeDataCalendario, paraDataCalendario } from "../../src/lib/formatar";
+import { calcularEncargos, competenciaDe, vencimentoNoMes } from "../../src/modulos/financeiro/regras";
+import {
+  APARTAMENTOS,
+  celularFicticio,
+  CONTRATOS,
+  cpfFicticio,
+  DESPESAS_AVULSAS,
+  DESPESAS_MENSAIS,
+  emailFicticio,
+  INQUILINOS,
+  rgFicticio,
+  sorteador,
+} from "./dados";
 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 
@@ -82,6 +94,7 @@ async function main() {
   await semearApartamentos(organizationId, propriedade.id, userId);
   await semearInquilinos(organizationId);
   await semearContratos(organizationId, userId);
+  await semearFinanceiro(organizationId, userId);
 
   console.log(`Conta de demonstração pronta: ${EMAIL} (senha em SEED_SENHA no .env).`);
 }
@@ -112,7 +125,7 @@ async function semearApartamentos(organizationId: string, propriedadeId: string,
         createdAt: cadastradoEm,
         historicoStatus: {
           create: [
-            { organizationId, para: "LIVRE", motivo: "Cadastro do apartamento", usuarioId, createdAt: cadastradoEm },
+            { organizationId, para: "LIVRE", usuarioId, createdAt: cadastradoEm },
             // Ocupados ganham o histórico pelo contrato (semearContratos).
             ...(apto.status === "LIVRE" || apto.status === "OCUPADO"
               ? []
@@ -237,6 +250,135 @@ async function semearContratos(organizationId: string, usuarioId: string) {
       ],
     });
   }
+}
+
+/**
+ * Fase 3: 12 meses de aluguéis e despesas. Quase todos pagam em dia (alguns dias antes, ou um ou dois
+ * depois, dentro da tolerância); para a demonstração ter o que mostrar, o 103 está com os dois últimos
+ * meses em aberto, o 201 pagou só metade do mês passado e o 304 pagou um mês com 15 dias de atraso.
+ * O que vence nos próximos dias fica pendente — depende do dia em que o seed roda.
+ */
+async function semearFinanceiro(organizationId: string, usuarioId: string) {
+  const hoje = hojeISO();
+  const mesAtual = competenciaDe(hoje);
+  const regras = { multaPercentual: 10, jurosMensalPercentual: 1, diasCarencia: 3 };
+  const sorte = sorteador(1125);
+  const entre = (min: number, max: number) => min + Math.floor(sorte() * (max - min + 1));
+
+  const contratos = await db.contrato.findMany({
+    where: { organizationId },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      dataInicio: true,
+      diaVencimento: true,
+      valorInicial: true,
+      encerradoEm: true,
+      apartamento: { select: { identificacao: true } },
+      reajustes: { orderBy: { dataBase: "asc" }, select: { dataBase: true, valorNovo: true } },
+    },
+  });
+
+  type Recebido = {
+    cobrancaId: string;
+    data: string;
+    valorPago: number;
+    valorPrincipal: number;
+    multa: number;
+    juros: number;
+    forma: "PIX" | "DINHEIRO" | "TRANSFERENCIA";
+    observacao: string | null;
+  };
+  const recebidos: Recebido[] = [];
+
+  for (const c of contratos) {
+    const inicio = isoDeDataCalendario(c.dataInicio);
+    const fim = c.encerradoEm ? isoDeDataCalendario(c.encerradoEm) : null;
+    const apto = c.apartamento.identificacao;
+    const forma = apto === "202" ? "TRANSFERENCIA" : apto === "304" ? "DINHEIRO" : "PIX";
+
+    for (let m = -11; m <= 0; m++) {
+      const competencia = somarMeses(mesAtual, m);
+      // Mesma regra de garantirCobrancas: vencimento antes do início do contrato fica para o mês seguinte.
+      const vencimento = vencimentoNoMes(competencia, c.diaVencimento);
+      if (vencimento < inicio || (fim && vencimento > fim)) continue;
+      const valor = c.reajustes.reduce((v, r) => (isoDeDataCalendario(r.dataBase) <= vencimento ? r.valorNovo : v), c.valorInicial);
+
+      // Quando e quanto entrou (null = ainda não pagou).
+      let pagamento: Omit<Recebido, "cobrancaId" | "forma"> | null = null;
+      if (apto === "103" && m >= -1) {
+        pagamento = null;
+      } else if (apto === "201" && m === -1) {
+        const metade = Math.round(valor / 2);
+        pagamento = { data: vencimento, valorPago: metade, valorPrincipal: metade, multa: 0, juros: 0, observacao: "Pagou metade; disse que acerta o resto no fim do mês" };
+      } else if (apto === "304" && m === -3) {
+        const data = somarDias(vencimento, 15);
+        const { multa, juros } = calcularEncargos(valor, vencimento, data, regras);
+        pagamento = { data, valorPago: valor + multa + juros, valorPrincipal: valor, multa, juros, observacao: null };
+      } else {
+        const data = somarDias(vencimento, -entre(-2, 4));
+        pagamento = data <= hoje ? { data, valorPago: valor, valorPrincipal: valor, multa: 0, juros: 0, observacao: null } : null;
+      }
+
+      const cobranca = await db.cobranca.create({
+        data: {
+          organizationId,
+          contratoId: c.id,
+          competencia: paraDataCalendario(competencia),
+          vencimento: paraDataCalendario(vencimento),
+          valor,
+          chaveGeracao: `${c.id}:${competencia.slice(0, 7)}`,
+          status: !pagamento ? "PENDENTE" : pagamento.valorPrincipal >= valor ? "PAGO" : "PARCIAL",
+          createdAt: meioDia(competencia),
+        },
+        select: { id: true },
+      });
+      if (pagamento) recebidos.push({ cobrancaId: cobranca.id, forma, ...pagamento });
+    }
+  }
+
+  // Recibos numerados na ordem em que o dinheiro entrou.
+  recebidos.sort((a, b) => a.data.localeCompare(b.data));
+  await db.pagamento.createMany({
+    data: recebidos.map(({ data, ...r }, i) => ({
+      organizationId,
+      ...r,
+      data: paraDataCalendario(data),
+      numeroRecibo: i + 1,
+      registradoPorId: usuarioId,
+      createdAt: meioDia(data),
+    })),
+  });
+  await db.configuracao.update({ where: { organizationId }, data: { proximoNumeroRecibo: recebidos.length + 1 } });
+
+  // Despesas: as contas do mês e os gastos avulsos, nunca depois de hoje.
+  const aptos = await db.apartamento.findMany({ where: { organizationId }, select: { id: true, identificacao: true } });
+  const idDoApto = (identificacao?: string) => aptos.find((a) => a.identificacao === identificacao)?.id ?? null;
+  const despesas = [];
+  for (let m = -11; m <= 0; m++) {
+    const competencia = somarMeses(mesAtual, m);
+    const mes = Number(competencia.slice(5, 7));
+    const mensais = DESPESAS_MENSAIS.map((d) => ({ ...d, valor: entre(...d.faixa) }));
+    // IPTU em 10 parcelas, de fevereiro a novembro.
+    if (mes >= 2 && mes <= 11) {
+      mensais.push({ categoria: "IPTU", descricao: `IPTU ${competencia.slice(0, 4)} — parcela ${mes - 1} de 10`, dia: 10, faixa: [0, 0], valor: 310_00 });
+    }
+    for (const d of mensais) {
+      const data = vencimentoNoMes(competencia, d.dia);
+      if (data <= hoje) despesas.push({ categoria: d.categoria, descricao: d.descricao, valor: d.valor, data, apartamentoId: null, observacao: null });
+    }
+  }
+  for (const d of DESPESAS_AVULSAS) {
+    const proposta = vencimentoNoMes(somarMeses(mesAtual, -d.mesesAtras), d.dia);
+    const data = proposta <= hoje ? proposta : hoje;
+    despesas.push({ categoria: d.categoria, descricao: d.descricao, valor: d.valor, data, apartamentoId: idDoApto(d.apto), observacao: d.observacao ?? null });
+  }
+  await db.despesa.createMany({
+    data: despesas.map(({ data, ...d }) => ({ organizationId, ...d, data: paraDataCalendario(data), createdAt: meioDia(data) })),
+  });
+
+  const emAberto = await db.cobranca.count({ where: { organizationId, status: { in: ["PENDENTE", "PARCIAL"] } } });
+  console.log(`Financeiro: ${recebidos.length} pagamentos, ${emAberto} cobranças em aberto e ${despesas.length} despesas.`);
 }
 
 main()

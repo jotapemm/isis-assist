@@ -13,19 +13,23 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { formatarMoeda } from "@/lib/formatar";
 import { cn } from "@/lib/utils";
 import { STATUS } from "@/modulos/apartamentos/status";
+import { type TipoResidencial, vocabulario } from "@/modulos/apartamentos/vocabulario";
 import { encerrarContrato } from "../acoes";
 import { type DadosEncerrar, esquemaEncerrar, MOTIVOS_ENCERRAMENTO } from "../esquemas";
 
-/** Inquilino saiu: data, motivo, devolução da caução e como fica o apartamento. */
+/** Inquilino saiu: data, motivo, devolução da caução e como fica o imóvel. */
 export function EncerrarContrato({
   contratoId,
-  identificacao,
+  nomeImovel,
+  tipo,
   nomeInquilino,
   valorCaucao,
   hoje,
 }: {
   contratoId: string;
-  identificacao: string;
+  /** "Apto 203" ou "Casa 01". */
+  nomeImovel: string;
+  tipo: TipoResidencial;
   nomeInquilino: string;
   valorCaucao: number;
   hoje: string;
@@ -48,7 +52,7 @@ export function EncerrarContrato({
       if (r.ok) setAberto(false);
       return r;
     },
-    `Contrato encerrado. O apto ${identificacao} foi atualizado.`,
+    `Contrato encerrado. ${nomeImovel} foi ${vocabulario(tipo).o === "a" ? "atualizada" : "atualizado"}.`,
   );
   const motivo = useWatch({ control: form.control, name: "motivo" });
   const statusApto = useWatch({ control: form.control, name: "statusApto" });
@@ -65,11 +69,11 @@ export function EncerrarContrato({
         <SheetHeader>
           <SheetTitle>Encerrar contrato</SheetTitle>
           <SheetDescription>
-            {nomeInquilino} sai do apto {identificacao}. O contrato fica guardado no histórico.
+            {nomeInquilino} sai {vocabulario(tipo).do} {nomeImovel.toLowerCase()}. O contrato fica guardado no histórico.
           </SheetDescription>
         </SheetHeader>
 
-        <form onSubmit={enviar} noValidate className="flex flex-col gap-6 px-4 pb-8">
+        <form method="post" onSubmit={enviar} noValidate className="flex flex-col gap-6 px-4 pb-8">
           <FieldGroup className="gap-5">
             <CampoData control={form.control} name="dataSaida" rotulo="Data da saída" />
             <div className="flex flex-col gap-2.5">
@@ -94,8 +98,8 @@ export function EncerrarContrato({
           </FieldGroup>
 
           <div className="flex flex-col gap-2.5">
-            <p className="text-sm font-medium">Como fica o apartamento</p>
-            <div role="radiogroup" aria-label="Como fica o apartamento" className="flex flex-col gap-2">
+            <p className="text-sm font-medium">Como fica {vocabulario(tipo).o} {vocabulario(tipo).singular}</p>
+            <div role="radiogroup" aria-label="Situação depois da saída" className="flex flex-col gap-2">
               {(["LIVRE", "REFORMA", "MANUTENCAO"] as const).map((s) => {
                 const info = STATUS[s];
                 const Icone = info.icone;

@@ -49,7 +49,7 @@ export function FormRedefinirSenha({ token }: { token: string | null }) {
   }
 
   return (
-    <form onSubmit={form.handleSubmit(salvar)} noValidate>
+    <form method="post" onSubmit={form.handleSubmit(salvar)} noValidate>
       <FieldGroup>
         <CampoSenha
           control={form.control}

@@ -8,7 +8,7 @@ export async function obterResumoConta(ctx: Contexto) {
   const propriedade = await db.propriedade.findFirst({
     where: { organizationId: ctx.organizacaoId, arquivadoEm: null },
     orderBy: { createdAt: "asc" },
-    select: { id: true, nome: true, cidade: true, uf: true },
+    select: { id: true, nome: true, cidade: true, uf: true, tipo: true },
   });
   return { propriedade };
 }
@@ -42,6 +42,7 @@ export async function obterConfiguracoes(ctx: Contexto) {
     },
     endereco: {
       nome: propriedade?.nome ?? "",
+      tipo: propriedade?.tipo ?? "EDIFICIO",
       cep: propriedade?.cep ? `${propriedade.cep.slice(0, 5)}-${propriedade.cep.slice(5)}` : "",
       logradouro: propriedade?.logradouro ?? "",
       numero: propriedade?.numero ?? "",

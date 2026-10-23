@@ -1,15 +1,26 @@
 import "server-only";
+import { cache } from "react";
 import type { Contexto } from "@/server/contexto";
 import { db } from "@/server/db";
 import { compararIdentificacao } from "./status";
+import { type TipoResidencial, vocabulario } from "./vocabulario";
 
 /** O residencial "da casa": hoje cada conta tem um; o modelo já aceita vários. */
-export async function propriedadePrincipal(ctx: Contexto) {
-  return db.propriedade.findFirst({
+export const propriedadePrincipal = cache(async (ctx: Contexto) =>
+  db.propriedade.findFirst({
     where: { organizationId: ctx.organizacaoId, arquivadoEm: null },
     orderBy: { createdAt: "asc" },
-    select: { id: true, nome: true },
-  });
+    select: { id: true, nome: true, tipo: true },
+  }),
+);
+
+/** Prédio ou casas — decide as palavras e o desenho do mapa. */
+export async function tipoDaConta(ctx: Contexto): Promise<TipoResidencial> {
+  return (await propriedadePrincipal(ctx))?.tipo ?? "EDIFICIO";
+}
+
+export async function vocabularioDaConta(ctx: Contexto) {
+  return vocabulario(await tipoDaConta(ctx));
 }
 
 export type ApartamentoResumo = Awaited<ReturnType<typeof listarApartamentos>>[number];

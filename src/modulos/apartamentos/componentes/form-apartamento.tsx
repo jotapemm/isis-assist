@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
 import { criarApartamento, editarApartamento } from "../acoes";
 import { type DadosApartamento, esquemaApartamento } from "../esquemas";
+import { type TipoResidencial, vocabulario } from "../vocabulario";
 
 const somenteNumeros = (v: string) => v.replace(/\D/g, "");
 
@@ -24,33 +25,51 @@ export const APARTAMENTO_VAZIO: DadosApartamento = {
 };
 
 /** Cadastro e edição usam o mesmo formulário; com `id` é edição. */
-export function FormApartamento({ id, inicial = APARTAMENTO_VAZIO }: { id?: string; inicial?: DadosApartamento }) {
+export function FormApartamento({
+  id,
+  tipo,
+  inicial = APARTAMENTO_VAZIO,
+}: {
+  id?: string;
+  tipo: TipoResidencial;
+  inicial?: DadosApartamento;
+}) {
+  const v = vocabulario(tipo);
+  const casas = tipo === "CASAS";
   const form = useForm<DadosApartamento>({ resolver: zodResolver(esquemaApartamento), defaultValues: inicial });
   // Se der certo, a action redireciona para a página do apto; o aviso só aparece em caso de erro.
   const acao = (dados: DadosApartamento) => (id ? editarApartamento(id, dados) : criarApartamento(dados));
-  const { enviar, pendente, erro } = useEnviar(form, acao, "Apartamento salvo.");
+  const { enviar, pendente, erro } = useEnviar(form, acao, "Salvo.");
 
   return (
-    <form onSubmit={enviar} noValidate className="@container max-w-3xl">
+    <form method="post" onSubmit={enviar} noValidate className="@container max-w-3xl">
       <FieldGroup className="grid gap-5 @lg:grid-cols-6">
         <CampoTexto
           control={form.control}
           name="identificacao"
-          rotulo="Número do apartamento"
-          placeholder="Ex.: 203"
+          rotulo={`Número ${v.do} ${v.singular}`}
+          placeholder={casas ? "Ex.: 07" : "Ex.: 203"}
           autoFocus={!id}
           className="@lg:col-span-2"
         />
+        {!casas && (
+          <CampoTexto
+            control={form.control}
+            name="andar"
+            rotulo="Andar"
+            inputMode="numeric"
+            mascara={somenteNumeros}
+            descricao="Térreo = 0"
+            className="@lg:col-span-2"
+          />
+        )}
         <CampoTexto
           control={form.control}
-          name="andar"
-          rotulo="Andar"
-          inputMode="numeric"
-          mascara={somenteNumeros}
-          descricao="Térreo = 0"
+          name="bloco"
+          rotulo={casas ? "Rua ou quadra" : "Bloco"}
+          opcional
           className="@lg:col-span-2"
         />
-        <CampoTexto control={form.control} name="bloco" rotulo="Bloco" opcional className="@lg:col-span-2" />
 
         <CampoMoeda
           control={form.control}
@@ -102,7 +121,7 @@ export function FormApartamento({ id, inicial = APARTAMENTO_VAZIO }: { id?: stri
           <Link href={id ? `/apartamentos/${id}` : "/apartamentos"}>Cancelar</Link>
         </Button>
         <Button type="submit" disabled={pendente}>
-          {pendente ? "Salvando…" : id ? "Salvar alterações" : "Cadastrar apartamento"}
+          {pendente ? "Salvando…" : id ? "Salvar alterações" : `Cadastrar ${v.singular}`}
         </Button>
       </div>
     </form>

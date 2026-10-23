@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
-import { Building2, ChevronRight, List } from "lucide-react";
+import { Building2, ChevronRight, House, List } from "lucide-react";
 import { formatarMoeda } from "@/lib/formatar";
 import { cn } from "@/lib/utils";
 import { nomeAndar, STATUS, STATUS_APARTAMENTO, type StatusApartamento } from "../status";
 import { BotaoGerarLote } from "./botao-gerar-lote";
-import { MapaFachada } from "./mapa-fachada";
+import { MapaResidencial } from "./mapa-vila";
 import { SeloStatus } from "./selo-status";
+import { type TipoResidencial, vocabulario } from "../vocabulario";
 
 type Apto = {
   id: string;
@@ -33,7 +34,8 @@ const lerVisao = (): Visao => {
   }
 };
 
-export function PainelApartamentos({ aptos, residencial }: { aptos: Apto[]; residencial: string }) {
+export function PainelApartamentos({ aptos, residencial, tipo }: { aptos: Apto[]; residencial: string; tipo: TipoResidencial }) {
+  const v = vocabulario(tipo);
   const [destaque, setDestaque] = useState<StatusApartamento | null>(null);
   const visaoSalva = useSyncExternalStore(() => () => {}, lerVisao, () => "mapa" as Visao);
   const [visaoEscolhida, setVisaoEscolhida] = useState<Visao | null>(null);
@@ -55,7 +57,7 @@ export function PainelApartamentos({ aptos, residencial }: { aptos: Apto[]; resi
         {/* Legenda que também filtra: tocar num status destaca só aqueles aptos. */}
         <div role="group" aria-label="Destacar por status" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
           <Filtro ativo={destaque === null} onClick={() => setDestaque(null)}>
-            Todos <strong className="tabular-nums">{aptos.length}</strong>
+            {v.o === "a" ? "Todas" : "Todos"} <strong className="tabular-nums">{aptos.length}</strong>
           </Filtro>
           {STATUS_APARTAMENTO.filter((s) => contagem[s] > 0).map((s) => (
             <Filtro key={s} ativo={destaque === s} onClick={() => setDestaque(destaque === s ? null : s)}>
@@ -66,11 +68,11 @@ export function PainelApartamentos({ aptos, residencial }: { aptos: Apto[]; resi
         </div>
 
         <div className="flex shrink-0 items-center gap-2 self-start">
-          <BotaoGerarLote existentes={aptos.map((a) => a.identificacao)} />
+          <BotaoGerarLote tipo={tipo} existentes={aptos.map((a) => a.identificacao)} />
           <div role="radiogroup" aria-label="Forma de ver" className="inline-flex shrink-0 gap-1 rounded-xl bg-muted p-1">
             {(
               [
-                ["mapa", "Fachada", Building2],
+                ["mapa", tipo === "CASAS" ? "Mapa" : "Fachada", tipo === "CASAS" ? House : Building2],
                 ["lista", "Lista", List],
               ] as const
             ).map(([valor, rotulo, Icone]) => (
@@ -94,7 +96,7 @@ export function PainelApartamentos({ aptos, residencial }: { aptos: Apto[]; resi
       </div>
 
       {visao === "mapa" ? (
-        <MapaFachada aptos={aptos} residencial={residencial} destaque={destaque} />
+        <MapaResidencial tipo={tipo} aptos={aptos} residencial={residencial} destaque={destaque} />
       ) : (
         <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
           {visiveis.map((apto) => (
@@ -104,7 +106,7 @@ export function PainelApartamentos({ aptos, residencial }: { aptos: Apto[]; resi
                 <span className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
                   <span className="text-sm text-muted-foreground">
                     {[
-                      apto.inquilino ?? nomeAndar(apto.andar),
+                      apto.inquilino ?? (tipo === "CASAS" ? null : nomeAndar(apto.andar)),
                       apto.quartos !== null && `${apto.quartos} ${apto.quartos === 1 ? "quarto" : "quartos"}`,
                       apto.areaM2 !== null && `${apto.areaM2} m²`,
                     ]

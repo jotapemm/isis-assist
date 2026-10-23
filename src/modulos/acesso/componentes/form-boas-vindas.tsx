@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
 import { AvisoErro, CampoTexto } from "@/components/campos/campos";
+import { EscolhaTipoResidencial } from "@/components/campos/escolha-tipo-residencial";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
 import { criarResidencial } from "@/modulos/conta/acoes";
@@ -15,7 +16,7 @@ export function FormBoasVindas() {
   const [enviando, iniciar] = useTransition();
   const form = useForm<z.infer<typeof esquemaResidencial>>({
     resolver: zodResolver(esquemaResidencial),
-    defaultValues: { nome: "" },
+    defaultValues: { nome: "", tipo: "EDIFICIO" },
   });
 
   function continuar(dados: z.infer<typeof esquemaResidencial>) {
@@ -28,7 +29,7 @@ export function FormBoasVindas() {
   }
 
   return (
-    <form onSubmit={form.handleSubmit(continuar)} noValidate>
+    <form method="post" onSubmit={form.handleSubmit(continuar)} noValidate>
       <FieldGroup>
         <CampoTexto
           control={form.control}
@@ -39,6 +40,10 @@ export function FormBoasVindas() {
           autoCapitalize="words"
           autoFocus
         />
+        <div className="flex flex-col gap-2.5">
+          <p className="text-sm font-medium">Como ele é?</p>
+          <EscolhaTipoResidencial control={form.control} />
+        </div>
         <AvisoErro mensagem={erro} />
         <Button type="submit" size="lg" className="w-full" disabled={enviando}>
           {enviando ? "Preparando…" : "Continuar"}

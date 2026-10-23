@@ -47,7 +47,7 @@ export function FormEsqueciSenha() {
   }
 
   return (
-    <form onSubmit={form.handleSubmit(enviar)} noValidate>
+    <form method="post" onSubmit={form.handleSubmit(enviar)} noValidate>
       <FieldGroup>
         <CampoTexto
           control={form.control}

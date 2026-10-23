@@ -37,8 +37,10 @@ export function FormEntrar() {
     router.refresh();
   }
 
+  // method="post" em todos os formulários: se enviarem antes de o JavaScript carregar, o navegador
+  // faz o envio nativo — com GET, a senha iria parar na URL e no histórico.
   return (
-    <form onSubmit={form.handleSubmit(entrar)} noValidate>
+    <form method="post" onSubmit={form.handleSubmit(entrar)} noValidate>
       <FieldGroup>
         <CampoTexto
           control={form.control}

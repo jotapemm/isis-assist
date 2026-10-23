@@ -14,8 +14,8 @@ type Foto = { id: string; nomeOriginal: string };
 
 const url = (id: string) => `/api/arquivos/${id}`;
 
-/** Fotos do apartamento. A primeira é a capa; tocar numa foto abre em tamanho grande. */
-export function GaleriaFotos({ apartamentoId, identificacao, fotos }: { apartamentoId: string; identificacao: string; fotos: Foto[] }) {
+/** Fotos do imóvel. A primeira é a capa; tocar numa foto abre em tamanho grande. `nome` = "Apto 203" ou "Casa 01". */
+export function GaleriaFotos({ apartamentoId, nome, fotos }: { apartamentoId: string; nome: string; fotos: Foto[] }) {
   const { enviar, enviando } = useEnvioArquivos({ categoria: "FOTO_APTO", apartamentoId });
   const [aberta, setAberta] = useState<Foto | null>(null);
   const [confirmarApagar, setConfirmarApagar] = useState(false);
@@ -53,7 +53,7 @@ export function GaleriaFotos({ apartamentoId, identificacao, fotos }: { apartame
               type="button"
               onClick={() => setAberta(foto)}
               className="relative block aspect-[4/3] w-full overflow-hidden rounded-xl bg-muted outline-none focus-visible:ring-3 focus-visible:ring-ring/60"
-              aria-label={`Abrir foto ${i + 1} do apto ${identificacao}`}
+              aria-label={`Abrir foto ${i + 1}: ${nome}`}
             >
               <Image src={url(foto.id)} alt="" fill unoptimized sizes="(min-width: 640px) 33vw, 50vw" className="object-cover" />
             </button>
@@ -87,12 +87,12 @@ export function GaleriaFotos({ apartamentoId, identificacao, fotos }: { apartame
 
       <Dialog open={aberta !== null} onOpenChange={(abrir) => !abrir && fechar()}>
         <DialogContent className="max-w-3xl p-3 sm:p-4">
-          <DialogTitle className="sr-only">Foto do apto {identificacao}</DialogTitle>
+          <DialogTitle className="sr-only">Foto: {nome}</DialogTitle>
           <DialogDescription className="sr-only">Foto em tamanho grande, com opções para usar como capa ou apagar.</DialogDescription>
           {aberta && (
             <>
               <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-muted">
-                <Image src={url(aberta.id)} alt={`Apto ${identificacao}`} fill unoptimized sizes="90vw" className="object-contain" />
+                <Image src={url(aberta.id)} alt={nome} fill unoptimized sizes="90vw" className="object-contain" />
               </div>
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
                 {confirmarApagar ? (

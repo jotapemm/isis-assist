@@ -44,7 +44,7 @@ async function Conteudo() {
       <EstadoVazio
         icone={FileSignature}
         titulo="Nenhum contrato ainda"
-        descricao="Escolha o apartamento, quem vai morar e os valores. Ao ativar, o apartamento passa para Ocupado e o reajuste anual fica agendado."
+        descricao="Escolha o imóvel, quem vai morar e os valores. Ao ativar, ele passa para Ocupado e o reajuste anual fica agendado."
       >
         <Button asChild size="lg">
           <Link href="/contratos/novo">

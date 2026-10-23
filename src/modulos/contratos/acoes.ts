@@ -9,6 +9,7 @@ import { falha, falhaDeValidacao, sucesso, type Resultado } from "@/lib/resultad
 import { exigirContexto } from "@/server/contexto";
 import { db } from "@/server/db";
 import { variacoesDoPeriodo } from "@/server/indices";
+import { vocabulario } from "../apartamentos/vocabulario";
 import {
   esquemaEditarContrato,
   esquemaEncerrar,
@@ -27,9 +28,10 @@ export async function criarContrato(entrada: unknown): Promise<Resultado> {
 
   const apto = await db.apartamento.findFirst({
     where: { id: d.apartamentoId, organizationId: ctx.organizacaoId, arquivadoEm: null },
-    select: { id: true, identificacao: true },
+    select: { id: true, identificacao: true, propriedade: { select: { tipo: true } } },
   });
-  if (!apto) return falha("Esse apartamento não existe mais.");
+  if (!apto) return falha("Esse imóvel não existe mais.");
+  const nomeApto = vocabulario(apto.propriedade.tipo).nome(apto.identificacao);
 
   let inquilino: { id: string; nome: string } | null = null;
   let fiadorId: string | null = null;
@@ -60,7 +62,7 @@ export async function criarContrato(entrada: unknown): Promise<Resultado> {
       where: { apartamentoId: apto.id, status: "ATIVO" },
       select: { inquilino: { select: { nome: true } } },
     });
-    if (ativo) return { conflito: `O apto ${apto.identificacao} já tem contrato ativo com ${ativo.inquilino.nome}.` };
+    if (ativo) return { conflito: `${nomeApto} já tem contrato ativo com ${ativo.inquilino.nome}.` };
 
     const morador =
       inquilino ??
@@ -190,6 +192,11 @@ export async function encerrarContrato(id: string, entrada: unknown): Promise<Re
       },
     }),
     db.apartamento.update({ where: { id: contrato.apartamento.id }, data: { status: d.statusApto } }),
+    // Aluguéis que venceriam depois da saída e não têm pagamento deixam de existir para a cobrança.
+    db.cobranca.updateMany({
+      where: { contratoId: contrato.id, status: "PENDENTE", vencimento: { gt: paraDataCalendario(d.dataSaida) } },
+      data: { status: "CANCELADO" },
+    }),
     db.historicoStatus.create({
       data: {
         organizationId: ctx.organizacaoId,
@@ -290,6 +297,11 @@ export async function aplicarReajuste(id: string, entrada: unknown): Promise<Res
     db.contrato.update({
       where: { id: contrato.id },
       data: { valorAluguel: valorNovo, proximoReajusteEm: paraDataCalendario(somarMeses(dataBase, 12)) },
+    }),
+    // Cobranças já geradas que vencem a partir do aniversário e ainda não têm pagamento seguem o valor novo.
+    db.cobranca.updateMany({
+      where: { contratoId: contrato.id, status: "PENDENTE", vencimento: { gte: contrato.proximoReajusteEm } },
+      data: { valor: valorNovo },
     }),
   ]);
   refresh();

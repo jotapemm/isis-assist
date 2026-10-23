@@ -62,7 +62,9 @@ export function useEnvioArquivos(destino: DestinoArquivo) {
       corpo.set("categoria", destino.categoria);
       if (destino.categoria === "FOTO_APTO") corpo.set("apartamentoId", destino.apartamentoId);
       else if (destino.categoria === "DOCUMENTO") corpo.set("inquilinoId", destino.inquilinoId);
-      else corpo.set("contratoId", destino.contratoId);
+      else if (destino.categoria === "CONTRATO_PDF") corpo.set("contratoId", destino.contratoId);
+      else if ("pagamentoId" in destino) corpo.set("pagamentoId", destino.pagamentoId);
+      else corpo.set("despesaId", destino.despesaId);
 
       try {
         const resposta = await fetch("/api/arquivos", { method: "POST", body: corpo });

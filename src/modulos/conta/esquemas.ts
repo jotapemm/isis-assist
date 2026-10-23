@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { cpfOuCnpjValido } from "@/lib/documentos";
 import { somenteDigitos } from "@/lib/mascaras";
+import { TIPOS_RESIDENCIAL } from "@/modulos/apartamentos/vocabulario";
 
 // Esquemas compartilhados: o formulário valida no navegador e a action valida de novo no servidor.
 
@@ -25,6 +26,7 @@ const opcional = (maximo: number) => z.string().trim().max(maximo, "Texto longo 
 
 export const esquemaResidencial = z.object({
   nome: z.string().trim().min(2, "Digite o nome do residencial.").max(80, "Nome longo demais."),
+  tipo: z.enum(TIPOS_RESIDENCIAL, "Escolha se é prédio ou casas."),
 });
 
 export const esquemaLocador = z.object({
@@ -53,6 +55,7 @@ export const esquemaCobranca = z.object({
 
 export const esquemaEndereco = z.object({
   nome: esquemaResidencial.shape.nome,
+  tipo: esquemaResidencial.shape.tipo,
   cep: z.string().refine((v) => v === "" || somenteDigitos(v).length === 8, "CEP incompleto."),
   logradouro: opcional(120),
   numero: opcional(20),

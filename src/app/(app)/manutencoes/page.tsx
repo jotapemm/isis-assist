@@ -11,7 +11,7 @@ export default function Pagina() {
       descricao="Consertos, prestadores de serviço e quanto custou cada um."
       icone={Wrench}
       oQueVem="As ordens de serviço vêm aqui"
-      explicacao="Abra um chamado para um apartamento, acompanhe até concluir e o custo vira despesa automaticamente."
+      explicacao="Abra um chamado para um imóvel, acompanhe até concluir e o custo vira despesa automaticamente."
       fase="Fase 4"
     />
   );

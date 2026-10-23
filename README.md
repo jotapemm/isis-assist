@@ -25,6 +25,13 @@ npm run dev                 # http://localhost:3000
 
 **Índices de reajuste:** IGP-M e IPCA vêm da API pública do Banco Central (SGS) na hora de aplicar o reajuste e ficam guardados no banco. Sem internet, a tela pede o percentual à mão.
 
+**Banco fora do ar ("ECONNREFUSED" / "Failed to get session"):** o Postgres local do Prisma não volta sozinho
+quando o computador reinicia. O `npm run dev` agora tenta subir o banco antes de começar; se ainda assim der erro,
+rode `npm run db:subir`.
+
+**Financeiro:** as cobranças do mês aparecem sozinhas para os contratos ativos (ao abrir as telas ou pela rotina
+diária `GET /api/cron/diario`, protegida pelo `CRON_SECRET`). Recibos em PDF saem em `/api/recibos/<pagamento>`.
+
 **"Esqueci a senha" em desenvolvimento:** sem `RESEND_API_KEY`, o e-mail com o link aparece no terminal do `npm run dev`.
 
 **Testar no celular:** o servidor de dev também responde no IP da rede (aparece como "Network" ao iniciar).
@@ -34,7 +41,7 @@ Para instalar como app (PWA) é preciso HTTPS — isso entra no deploy.
 
 | Comando | O que faz |
 |---|---|
-| `npm run dev` | Servidor de desenvolvimento |
+| `npm run dev` | Sobe o banco local se precisar e inicia o servidor de desenvolvimento |
 | `npm run build` | Build de produção (gera o cliente Prisma antes) |
 | `npm test` | Testes (Vitest) |
 | `npm run typecheck` / `npm run lint` | Tipos e lint |
@@ -47,7 +54,7 @@ Para instalar como app (PWA) é preciso HTTPS — isso entra no deploy.
 ## Stack
 
 Next.js 16 (App Router, Cache Components) · TypeScript · Tailwind 4 · shadcn/ui (Radix) · Prisma 7 + PostgreSQL ·
-Better Auth (e-mail/senha + organizações) · react-hook-form + zod · Vitest.
+Better Auth (e-mail/senha + organizações) · react-hook-form + zod · @react-pdf/renderer · Vitest.
 
 ## Convenções do código
 

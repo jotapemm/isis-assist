@@ -4,6 +4,7 @@ import { hojeISO, isoDeDataCalendario } from "@/lib/formatar";
 import type { Contexto } from "@/server/contexto";
 import { db } from "@/server/db";
 import { AVISO_FIM_DIAS, AVISO_REAJUSTE_DIAS } from "./limites";
+import { tipoDaConta } from "../apartamentos/consultas";
 import { compararIdentificacao, STATUS, type StatusApartamento } from "../apartamentos/status";
 
 
@@ -110,7 +111,8 @@ export type ContratoDetalhe = NonNullable<Awaited<ReturnType<typeof obterContrat
 
 /** Tudo que o assistente de novo contrato precisa: aptos com situação e inquilinos com fiador. */
 export async function dadosParaNovoContrato(ctx: Contexto) {
-  const [aptos, inquilinos] = await Promise.all([
+  const [tipo, aptos, inquilinos] = await Promise.all([
+    tipoDaConta(ctx),
     db.apartamento.findMany({
       where: { organizationId: ctx.organizacaoId, arquivadoEm: null },
       select: {
@@ -136,6 +138,7 @@ export async function dadosParaNovoContrato(ctx: Contexto) {
   ]);
 
   return {
+    tipo,
     aptos: aptos
       .map(({ contratos, ...a }) => ({ ...a, inquilinoAtual: contratos[0]?.inquilino.nome ?? null }))
       .sort((a, b) => (a.andar ?? -1) - (b.andar ?? -1) || compararIdentificacao(a.identificacao, b.identificacao)),
@@ -174,6 +177,6 @@ export async function bloqueioPorContrato(organizacaoId: string, apartamentoId: 
     select: { inquilino: { select: { nome: true } } },
   });
   return ativo
-    ? `Este apto tem contrato ativo com ${ativo.inquilino.nome}. Para deixá-lo ${STATUS[novoStatus].rotulo}, encerre o contrato primeiro.`
+    ? `Este imóvel tem contrato ativo com ${ativo.inquilino.nome}. Para deixá-lo ${STATUS[novoStatus].rotulo}, encerre o contrato primeiro.`
     : null;
 }

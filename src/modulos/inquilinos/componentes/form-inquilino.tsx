@@ -39,7 +39,7 @@ export function FormInquilino({ id, inicial = INQUILINO_VAZIO }: { id?: string; 
   const c = form.control;
 
   return (
-    <form onSubmit={enviar} noValidate className="flex max-w-3xl flex-col gap-8">
+    <form method="post" onSubmit={enviar} noValidate className="flex max-w-3xl flex-col gap-8">
       <Parte titulo="Dados pessoais" descricao="Só o nome é obrigatório; o resto pode ser completado depois.">
         <FieldGroup className="grid gap-5 @lg:grid-cols-2">
           <CampoTexto control={c} name="nome" rotulo="Nome completo" autoComplete="off" autoCapitalize="words" autoFocus={!id} className="@lg:col-span-2" />

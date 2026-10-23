@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { Pencil, Wallet } from "lucide-react";
+import { ChevronRight, Pencil } from "lucide-react";
 import { Bloco, Dados, VoltarPara } from "@/components/comum/blocos";
 import { EsqueletoBloco } from "@/components/comum/esqueleto";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,11 @@ import { ListaDocumentos } from "@/modulos/arquivos/componentes/lista-documentos
 import { AplicarReajuste } from "@/modulos/contratos/componentes/aplicar-reajuste";
 import { EncerrarContrato } from "@/modulos/contratos/componentes/encerrar-contrato";
 import { AvisosDePrazo, SeloContrato } from "@/modulos/contratos/componentes/situacao";
+import { vocabularioDaConta } from "@/modulos/apartamentos/consultas";
 import { obterContrato } from "@/modulos/contratos/consultas";
+import { SeloSituacao } from "@/modulos/financeiro/componentes/pecas";
+import { cobrancasDoContrato } from "@/modulos/financeiro/consultas";
+import { mesPorExtenso } from "@/modulos/financeiro/regras";
 import { AVISO_REAJUSTE_DIAS } from "@/modulos/contratos/limites";
 import { INDICES, percentualTexto } from "@/modulos/contratos/reajuste";
 import { BotaoWhatsApp } from "@/modulos/inquilinos/componentes/botoes-contato";
@@ -34,7 +38,7 @@ export default function PaginaContrato({ params }: PageProps<"/contratos/[id]">)
 async function Conteudo({ params }: { params: PageProps<"/contratos/[id]">["params"] }) {
   const { id } = await params;
   const ctx = await exigirContexto();
-  const c = await obterContrato(ctx, id);
+  const [c, v, { cobrancas }] = await Promise.all([obterContrato(ctx, id), vocabularioDaConta(ctx), cobrancasDoContrato(ctx, id)]);
   if (!c) notFound();
 
   const hoje = hojeISO();
@@ -52,7 +56,7 @@ async function Conteudo({ params }: { params: PageProps<"/contratos/[id]">["para
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="font-heading text-[1.85rem] leading-tight lg:text-[2.25rem]">
-              Apto <span className="font-mono font-bold tracking-tight">{c.apartamento.identificacao}</span>
+              {v.curto} <span className="font-mono font-bold tracking-tight">{c.apartamento.identificacao}</span>
             </h1>
             <SeloContrato contrato={c} className="text-sm" />
           </div>
@@ -74,7 +78,8 @@ async function Conteudo({ params }: { params: PageProps<"/contratos/[id]">["para
             </Button>
             <EncerrarContrato
               contratoId={c.id}
-              identificacao={c.apartamento.identificacao}
+              nomeImovel={v.nome(c.apartamento.identificacao)}
+              tipo={v.tipo}
               nomeInquilino={c.inquilino.nome}
               valorCaucao={c.valorCaucao ?? 0}
               hoje={hoje}
@@ -109,7 +114,7 @@ async function Conteudo({ params }: { params: PageProps<"/contratos/[id]">["para
             itens={[
               ["Inquilino", <Link key="i" href={`/inquilinos/${c.inquilino.id}`} className="underline-offset-4 hover:underline">{c.inquilino.nome}</Link>],
               ["Fiador", c.fiador?.nome ?? "Sem fiador"],
-              ["Apartamento", <Link key="a" href={`/apartamentos/${c.apartamento.id}`} className="underline-offset-4 hover:underline">Apto {c.apartamento.identificacao}</Link>],
+              [v.Singular, <Link key="a" href={`/apartamentos/${c.apartamento.id}`} className="underline-offset-4 hover:underline">{v.nome(c.apartamento.identificacao)}</Link>],
               ["Encerrado em", c.encerradoEm ? formatarData(c.encerradoEm) : null],
               ["Motivo", c.motivoEncerramento],
             ]}
@@ -126,10 +131,31 @@ async function Conteudo({ params }: { params: PageProps<"/contratos/[id]">["para
         </Bloco>
 
         <Bloco titulo="Cobranças">
-          <div className="flex items-start gap-3 text-muted-foreground">
-            <Wallet className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
-            <p className="text-sm">As cobranças mensais deste contrato aparecem aqui na Fase 3 (Financeiro).</p>
-          </div>
+          {cobrancas.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              A primeira cobrança aparece no mês do primeiro vencimento (todo dia {c.diaVencimento}).
+            </p>
+          ) : (
+            <ul className="divide-y">
+              {cobrancas.map((cob) => (
+                <li key={cob.id}>
+                  <Link
+                    href={`/financeiro?mes=${cob.competencia.slice(0, 7)}&pagar=${cob.id}`}
+                    className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0"
+                  >
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="font-medium first-letter:uppercase">{mesPorExtenso(cob.competencia)}</span>
+                      <span className="text-sm text-muted-foreground tabular-nums">
+                        vence {formatarData(cob.vencimento)} · {formatarMoeda(cob.valor)}
+                      </span>
+                    </span>
+                    <SeloSituacao situacao={cob.situacao} />
+                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </Bloco>
 
         <Bloco titulo="Reajustes" className="lg:col-span-2">

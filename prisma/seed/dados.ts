@@ -2,7 +2,7 @@
 // gerados de forma determinística para o seed dar sempre o mesmo resultado).
 
 /** Gerador pseudoaleatório com semente (mulberry32): mesmo seed → mesmos dados. */
-function sorteador(semente: number) {
+export function sorteador(semente: number) {
   return () => {
     semente |= 0;
     semente = (semente + 0x6d2b79f5) | 0;
@@ -106,3 +106,22 @@ export const emailFicticio = (nome: string) =>
     .split(" ")
     .filter((_, i, partes) => i === 0 || i === partes.length - 1)
     .join(".")}@exemplo.com.br`;
+
+type Categoria = "IPTU" | "AGUA" | "LUZ" | "MANUTENCAO" | "SEGURO";
+
+/** Contas que chegam todo mês, com o valor variando dentro da faixa. */
+export const DESPESAS_MENSAIS: { categoria: Categoria; descricao: string; dia: number; faixa: [number, number] }[] = [
+  { categoria: "LUZ", descricao: "Energia das áreas comuns", dia: 15, faixa: [180_00, 260_00] },
+  { categoria: "AGUA", descricao: "Água e esgoto (relógio geral)", dia: 12, faixa: [420_00, 570_00] },
+];
+
+/** Gastos avulsos dos últimos 12 meses; `apto` = despesa daquele imóvel (sem ele, é do residencial). */
+export const DESPESAS_AVULSAS: { mesesAtras: number; dia: number; categoria: Categoria; descricao: string; valor: number; apto?: string; observacao?: string }[] = [
+  { mesesAtras: 9, dia: 20, categoria: "SEGURO", descricao: "Seguro do prédio (anual)", valor: 1200_00, observacao: "Apólice renovada por mais 12 meses" },
+  { mesesAtras: 10, dia: 6, categoria: "MANUTENCAO", descricao: "Limpeza da caixa d'água", valor: 280_00 },
+  { mesesAtras: 4, dia: 6, categoria: "MANUTENCAO", descricao: "Limpeza da caixa d'água", valor: 280_00 },
+  { mesesAtras: 4, dia: 22, categoria: "MANUTENCAO", descricao: "Conserto do motor do portão", valor: 350_00 },
+  { mesesAtras: 2, dia: 9, categoria: "MANUTENCAO", descricao: "Troca da resistência do chuveiro", valor: 85_00, apto: "102" },
+  { mesesAtras: 1, dia: 8, categoria: "MANUTENCAO", descricao: "Pintura completa", valor: 2800_00, apto: "104", observacao: "Mão de obra e tinta; a troca do piso vem depois" },
+  { mesesAtras: 0, dia: 2, categoria: "MANUTENCAO", descricao: "Visita do encanador (orçamento do vazamento)", valor: 120_00, apto: "301" },
+];

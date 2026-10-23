@@ -11,7 +11,7 @@ export default function Pagina() {
       descricao="Anotações e lembretes, em lista ou no calendário."
       icone={CalendarCheck}
       oQueVem="Seus lembretes vêm aqui"
-      explicacao="Anote o que precisa lembrar, com data, prioridade e repetição. Alguns lembretes sugerem a ação certa, como colocar um apartamento em manutenção."
+      explicacao="Anote o que precisa lembrar, com data, prioridade e repetição. Alguns lembretes sugerem a ação certa, como colocar um imóvel em manutenção."
       fase="Fase 5"
     />
   );

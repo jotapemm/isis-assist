@@ -138,10 +138,22 @@ export function InputMoeda({
         inputMode="numeric"
         value={formatarValor(centavos || 0)}
         onChange={(e) => aoMudar(centavosDeDigitos(e.target.value))}
+        onSelect={cursorNoFim}
         className="pl-11 text-right tabular-nums"
       />
     </Adorno>
   );
+}
+
+/**
+ * Os dígitos entram pela direita, então o cursor mora no fim: tocar no campo (texto alinhado à direita)
+ * punha o cursor no começo e "9990" virava R$ 99.900,00. Selecionar tudo para digitar por cima continua valendo.
+ */
+function cursorNoFim(e: React.SyntheticEvent<HTMLInputElement>) {
+  const campo = e.currentTarget;
+  const fim = campo.value.length;
+  const tudoSelecionado = campo.selectionStart === 0 && campo.selectionEnd === fim;
+  if (!tudoSelecionado && (campo.selectionStart !== fim || campo.selectionEnd !== fim)) campo.setSelectionRange(fim, fim);
 }
 
 /** Valor em reais guardado em centavos (number). Os dígitos entram pela direita, como no caixa eletrônico. */

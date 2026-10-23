@@ -10,15 +10,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { mudarStatus } from "../acoes";
 import { STATUS, STATUS_APARTAMENTO, type StatusApartamento } from "../status";
+import { type TipoResidencial, vocabulario } from "../vocabulario";
 import { SeloStatus } from "./selo-status";
 
 export function MudarStatus({
   apartamentoId,
   identificacao,
+  tipo,
   atual,
 }: {
   apartamentoId: string;
   identificacao: string;
+  tipo: TipoResidencial;
   atual: StatusApartamento;
 }) {
   const [aberto, setAberto] = useState(false);
@@ -44,7 +47,7 @@ export function MudarStatus({
         setErro(r.erro);
         return;
       }
-      toast.success(`Apto ${identificacao} agora está como ${STATUS[escolhido].rotulo}.`);
+      toast.success(`${vocabulario(tipo).nome(identificacao)} agora está como ${STATUS[escolhido].rotulo}.`);
       setAberto(false);
     });
   }
@@ -60,8 +63,8 @@ export function MudarStatus({
       </SheetTrigger>
       <SheetContent side="bottom" className="mx-auto max-h-[92dvh] max-w-lg overflow-y-auto rounded-t-3xl pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <SheetHeader>
-          <SheetTitle>Status do apto {identificacao}</SheetTitle>
-          <SheetDescription>A mudança fica registrada no histórico do apartamento.</SheetDescription>
+          <SheetTitle>Status {vocabulario(tipo).do} {vocabulario(tipo).nomeMinusculo(identificacao)}</SheetTitle>
+          <SheetDescription>A mudança fica registrada no histórico.</SheetDescription>
         </SheetHeader>
 
         <div className="flex flex-col gap-4 px-4">

@@ -1,20 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { ArrowRight, Building2, CalendarClock, ChevronRight, TrendingUp, Upload } from "lucide-react";
+import { AlertCircle, ArrowRight, Building2, CalendarClock, ChevronRight, TrendingUp, Upload } from "lucide-react";
 import { EsqueletoBloco } from "@/components/comum/esqueleto";
 import { EstadoVazio } from "@/components/comum/estado-vazio";
 import { Fachada } from "@/components/comum/fachada";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { distanciaEmDias } from "@/lib/datas";
-import { formatarData, FUSO, saudacao } from "@/lib/formatar";
+import { formatarData, formatarMoeda, FUSO, saudacao } from "@/lib/formatar";
 import { cn } from "@/lib/utils";
-import { MapaFachada } from "@/modulos/apartamentos/componentes/mapa-fachada";
+import { MapaResidencial } from "@/modulos/apartamentos/componentes/mapa-vila";
 import { listarApartamentos } from "@/modulos/apartamentos/consultas";
 import { STATUS, STATUS_APARTAMENTO } from "@/modulos/apartamentos/status";
+import { type Vocabulario, vocabulario } from "@/modulos/apartamentos/vocabulario";
 import { obterResumoConta } from "@/modulos/conta/consultas";
 import { avisosDeContratos } from "@/modulos/contratos/consultas";
+import { atrasosParaPainel } from "@/modulos/financeiro/consultas";
 import { exigirContexto } from "@/server/contexto";
 
 export const metadata: Metadata = { title: "Início" };
@@ -29,10 +31,11 @@ export default function PaginaInicio() {
 
 async function Painel() {
   const ctx = await exigirContexto();
-  const [{ propriedade }, aptos, avisos] = await Promise.all([
+  const [{ propriedade }, aptos, avisos, atrasos] = await Promise.all([
     obterResumoConta(ctx),
     listarApartamentos(ctx),
     avisosDeContratos(ctx),
+    atrasosParaPainel(ctx),
   ]);
   const agora = new Date();
   const hoje = new Intl.DateTimeFormat("pt-BR", {
@@ -42,6 +45,8 @@ async function Painel() {
     month: "long",
   }).format(agora);
   const residencial = propriedade?.nome ?? "Residencial";
+  const tipo = propriedade?.tipo ?? "EDIFICIO";
+  const v = vocabulario(tipo);
 
   return (
     <>
@@ -56,13 +61,13 @@ async function Painel() {
       {aptos.length === 0 ? (
         <EstadoVazio
           ilustracao={<Fachada apagada className="mb-6 w-44 sm:w-52" />}
-          titulo="Nenhum apartamento cadastrado"
-          descricao="Cadastre os apartamentos ou importe a planilha que você já usa. Cada um aparece aqui na fachada, com a cor do status."
+          titulo={`${v.nenhum} ${v.singular} ${v.cadastrado}`}
+          descricao={`Cadastre ${v.o}s ${v.plural} ou importe a planilha que você já usa. ${v.cadaUm[0].toUpperCase()}${v.cadaUm.slice(1)} aparece aqui no mapa, com a cor do status.`}
         >
           <Button asChild size="lg">
             <Link href="/apartamentos">
               <Building2 className="size-5" />
-              Cadastrar apartamentos
+              Cadastrar {v.plural}
             </Link>
           </Button>
           <Button asChild size="lg" variant="outline">
@@ -74,7 +79,7 @@ async function Painel() {
         </EstadoVazio>
       ) : (
         <>
-          <Avisos avisos={avisos} />
+          <Avisos avisos={avisos} atrasos={atrasos} v={v} />
           <section aria-labelledby="titulo-fachada" className="rounded-3xl border bg-card p-3 sm:p-6">
             <header className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
@@ -85,18 +90,18 @@ async function Painel() {
                   <strong className="text-foreground tabular-nums">
                     {aptos.filter((a) => a.status === "OCUPADO").length}
                   </strong>{" "}
-                  de <span className="tabular-nums">{aptos.length}</span> apartamentos ocupados
+                  de <span className="tabular-nums">{aptos.length}</span> {v.plural} {v.ocupados}
                 </p>
               </div>
               <Button asChild variant="ghost" className="self-start sm:self-auto">
                 <Link href="/apartamentos">
-                  Ver apartamentos
+                  Ver {v.plural}
                   <ArrowRight className="size-4" />
                 </Link>
               </Button>
             </header>
 
-            <ul className="mb-5 flex flex-wrap gap-x-5 gap-y-2 text-sm" aria-label="Apartamentos por status">
+            <ul className="mb-5 flex flex-wrap gap-x-5 gap-y-2 text-sm" aria-label={`${v.Plural} por status`}>
               {STATUS_APARTAMENTO.map((s) => {
                 const quantos = aptos.filter((a) => a.status === s).length;
                 if (quantos === 0) return null;
@@ -110,7 +115,7 @@ async function Painel() {
               })}
             </ul>
 
-            <MapaFachada aptos={aptos} residencial={residencial} />
+            <MapaResidencial tipo={tipo} aptos={aptos} residencial={residencial} />
           </section>
         </>
       )}
@@ -119,13 +124,32 @@ async function Painel() {
 }
 
 /** Reajustes chegando e contratos terminando — some quando não há nada para olhar. */
-function Avisos({ avisos }: { avisos: Awaited<ReturnType<typeof avisosDeContratos>> }) {
+function Avisos({
+  avisos,
+  atrasos,
+  v,
+}: {
+  avisos: Awaited<ReturnType<typeof avisosDeContratos>>;
+  atrasos: Awaited<ReturnType<typeof atrasosParaPainel>>;
+  v: Vocabulario;
+}) {
   const itens = [
+    ...(atrasos.quantidade > 0
+      ? [
+          {
+            id: "atrasos",
+            href: "/financeiro",
+            icone: AlertCircle,
+            texto: `${atrasos.quantidade} ${atrasos.quantidade === 1 ? "aluguel" : "aluguéis"} em atraso`,
+            quando: `somando ${formatarMoeda(atrasos.total)}`,
+          },
+        ]
+      : []),
     ...avisos.reajustes.map((c) => ({
       id: `r-${c.id}`,
       href: `/contratos/${c.id}`,
       icone: TrendingUp,
-      texto: `Reajuste do apto ${c.apartamento.identificacao} (${c.inquilino.nome.split(" ")[0]})`,
+      texto: `Reajuste ${v.do} ${v.nomeMinusculo(c.apartamento.identificacao)} (${c.inquilino.nome.split(" ")[0]})`,
       quando:
         c.diasParaReajuste! < 0
           ? `atrasado desde ${formatarData(c.proximoReajusteEm!)}`
@@ -135,7 +159,7 @@ function Avisos({ avisos }: { avisos: Awaited<ReturnType<typeof avisosDeContrato
       id: `t-${c.id}`,
       href: `/contratos/${c.id}`,
       icone: CalendarClock,
-      texto: `Contrato do apto ${c.apartamento.identificacao} (${c.inquilino.nome.split(" ")[0]}) termina`,
+      texto: `Contrato ${v.do} ${v.nomeMinusculo(c.apartamento.identificacao)} (${c.inquilino.nome.split(" ")[0]}) termina`,
       quando: c.diasParaFim! < 0 ? `terminou em ${formatarData(c.dataFim)}` : distanciaEmDias(avisos.hoje, c.dataFim),
     })),
   ];

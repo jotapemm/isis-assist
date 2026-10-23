@@ -14,19 +14,20 @@ datasource db {
 // ─── Acesso (tabelas do Better Auth — nomes em inglês por serem da biblioteca) ───
 
 model User {
-  id             String            @id
-  name           String
-  email          String            @unique
-  emailVerified  Boolean           @default(false)
-  image          String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @default(now()) @updatedAt
-  sessions       Session[]
-  accounts       Account[]
-  members        Member[]
-  invitations    Invitation[]
-  mudancasStatus HistoricoStatus[]
-  reajustes      Reajuste[]
+  id                    String            @id
+  name                  String
+  email                 String            @unique
+  emailVerified         Boolean           @default(false)
+  image                 String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @default(now()) @updatedAt
+  sessions              Session[]
+  accounts              Account[]
+  members               Member[]
+  invitations           Invitation[]
+  mudancasStatus        HistoricoStatus[]
+  reajustes             Reajuste[]
+  pagamentosRegistrados Pagamento[]
 
   @@map("user")
 }
@@ -94,6 +95,8 @@ model Organization {
   apartamentos Apartamento[]
   inquilinos   Inquilino[]
   contratos    Contrato[]
+  cobrancas    Cobranca[]
+  despesas     Despesa[]
   arquivos     Arquivo[]
 
   @@map("organization")
@@ -154,22 +157,29 @@ model Configuracao {
 
 // ─── Imóveis ───
 
+/// Prédio de apartamentos ou residencial de casas: muda as palavras do app e o desenho do mapa.
+enum TipoPropriedade {
+  EDIFICIO
+  CASAS
+}
+
 model Propriedade {
-  id             String        @id @default(cuid())
+  id             String          @id @default(cuid())
   organizationId String
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   nome           String
+  tipo           TipoPropriedade @default(EDIFICIO)
   cep            String? // só dígitos
   logradouro     String?
   numero         String?
   complemento    String?
   bairro         String?
   cidade         String?
-  uf             String?       @db.Char(2)
+  uf             String?         @db.Char(2)
   observacoes    String?
   arquivadoEm    DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   apartamentos   Apartamento[]
 
   @@index([organizationId])
@@ -216,6 +226,7 @@ model Apartamento {
   historicoStatus HistoricoStatus[]
   arquivos        Arquivo[]
   contratos       Contrato[]
+  despesas        Despesa[]
 
   @@unique([propriedadeId, identificacao])
   @@index([organizationId])
@@ -322,6 +333,10 @@ model Arquivo {
   inquilino      Inquilino?       @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
   contratoId     String?
   contrato       Contrato?        @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  pagamentoId    String?
+  pagamento      Pagamento?       @relation(fields: [pagamentoId], references: [id], onDelete: Cascade)
+  despesaId      String?
+  despesa        Despesa?         @relation(fields: [despesaId], references: [id], onDelete: Cascade)
   enviadoPorId   String?
   createdAt      DateTime         @default(now())
 
@@ -329,6 +344,8 @@ model Arquivo {
   @@index([apartamentoId])
   @@index([inquilinoId])
   @@index([contratoId])
+  @@index([pagamentoId])
+  @@index([despesaId])
   @@map("arquivo")
 }
 
@@ -386,6 +403,7 @@ model Contrato {
   updatedAt             DateTime       @updatedAt
   reajustes             Reajuste[]
   arquivos              Arquivo[]
+  cobrancas             Cobranca[]
 
   @@index([organizationId, status])
   @@index([apartamentoId])
@@ -426,4 +444,131 @@ model IndiceEconomico {
 
   @@unique([indice, competencia])
   @@map("indice_economico")
+}
+
+// ─── Financeiro ───
+
+/**
+ * "Atrasada" não é gravado: é calculado (vencimento + tolerância < hoje e não quitada).
+ */
+enum StatusCobranca {
+  PENDENTE
+  PARCIAL
+  PAGO
+  CANCELADO
+}
+
+enum FormaPagamento {
+  PIX
+  DINHEIRO
+  TRANSFERENCIA
+  BOLETO
+  CARTAO
+  OUTRA
+}
+
+/**
+ * v2: pagamento que chega sozinho pelo gateway (PIX/boleto) em vez de ser registrado à mão.
+ */
+enum OrigemPagamento {
+  MANUAL
+  GATEWAY
+}
+
+/**
+ * Aluguel de um mês de um contrato.
+ */
+model Cobranca {
+  id                String         @id @default(cuid())
+  organizationId    String
+  organization      Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contratoId        String
+  contrato          Contrato       @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  /// Primeiro dia do mês de referência.
+  competencia       DateTime       @db.Date
+  vencimento        DateTime       @db.Date
+  valor             Int // centavos
+  descricao         String?
+  status            StatusCobranca @default(PENDENTE)
+  /// "contrato:AAAA-MM" — gerar o mês duas vezes nunca duplica.
+  chaveGeracao      String?        @unique
+  /// v2 — cobrança no gateway (Asaas/Efí): id, PIX copia-e-cola e link de pagamento.
+  gatewayProvedor   String?
+  gatewayCobrancaId String?
+  pixCopiaECola     String?
+  linkPagamento     String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  pagamentos        Pagamento[]
+
+  @@index([organizationId, competencia])
+  @@index([organizationId, status, vencimento])
+  @@index([contratoId])
+  @@map("cobranca")
+}
+
+model Pagamento {
+  id              String          @id @default(cuid())
+  organizationId  String
+  cobrancaId      String
+  cobranca        Cobranca        @relation(fields: [cobrancaId], references: [id], onDelete: Cascade)
+  data            DateTime        @db.Date
+  /// Tudo que entrou: principal + multa + juros.
+  valorPago       Int
+  /// Parte que abate o aluguel.
+  valorPrincipal  Int
+  multa           Int             @default(0)
+  juros           Int             @default(0)
+  forma           FormaPagamento
+  observacao      String?
+  /// Número sequencial do recibo, por conta.
+  numeroRecibo    Int
+  origem          OrigemPagamento @default(MANUAL)
+  registradoPorId String?
+  registradoPor   User?           @relation(fields: [registradoPorId], references: [id], onDelete: SetNull)
+  /// Pagamento lançado por engano e desfeito: continua guardado, mas não conta.
+  estornadoEm     DateTime?
+  createdAt       DateTime        @default(now())
+  arquivos        Arquivo[]
+
+  @@unique([organizationId, numeroRecibo])
+  @@index([cobrancaId])
+  @@index([organizationId, data])
+  @@map("pagamento")
+}
+
+enum CategoriaDespesa {
+  IPTU
+  CONDOMINIO
+  AGUA
+  LUZ
+  GAS
+  INTERNET
+  MANUTENCAO
+  SEGURO
+  TAXAS
+  OUTROS
+}
+
+model Despesa {
+  id             String           @id @default(cuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  /// Vazio = despesa geral do residencial (luz da área comum, IPTU do prédio…).
+  apartamentoId  String?
+  apartamento    Apartamento?     @relation(fields: [apartamentoId], references: [id], onDelete: SetNull)
+  categoria      CategoriaDespesa
+  descricao      String
+  valor          Int // centavos
+  data           DateTime         @db.Date
+  observacao     String?
+  /// Fase 4: despesa criada sozinha ao concluir uma ordem de serviço.
+  ordemServicoId String?          @unique
+  removidaEm     DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  arquivos       Arquivo[]
+
+  @@index([organizationId, data])
+  @@map("despesa")
 }

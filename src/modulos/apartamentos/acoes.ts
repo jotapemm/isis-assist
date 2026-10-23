@@ -8,7 +8,7 @@ import { db } from "@/server/db";
 import { bloqueioPorContrato } from "../contratos/consultas";
 import { propriedadePrincipal } from "./consultas";
 import { esquemaApartamento, esquemaLote, esquemaMudarStatus, textoParaInteiro } from "./esquemas";
-import { gerarIdentificacoes } from "./lote";
+import { gerarIdentificacoes, numerarCasas } from "./lote";
 import { STATUS } from "./status";
 
 function dadosDoFormulario(d: ReturnType<typeof esquemaApartamento.parse>) {
@@ -32,8 +32,8 @@ async function conflitoDeIdentificacao(propriedadeId: string, identificacao: str
   });
   if (!existente) return null;
   return existente.arquivadoEm
-    ? `Já existe um apto ${identificacao} arquivado. Use outro número.`
-    : `Já existe um apto ${identificacao} neste residencial.`;
+    ? `O número ${identificacao} já é de um imóvel arquivado. Use outro número.`
+    : `O número ${identificacao} já está em uso neste residencial.`;
 }
 
 export async function criarApartamento(entrada: unknown): Promise<Resultado> {
@@ -52,7 +52,7 @@ export async function criarApartamento(entrada: unknown): Promise<Resultado> {
       organizationId: ctx.organizacaoId,
       propriedadeId: propriedade.id,
       historicoStatus: {
-        create: { organizationId: ctx.organizacaoId, para: "LIVRE", motivo: "Cadastro do apartamento", usuarioId: ctx.usuario.id },
+        create: { organizationId: ctx.organizacaoId, para: "LIVRE", usuarioId: ctx.usuario.id },
       },
     },
     select: { id: true },
@@ -69,7 +69,7 @@ export async function editarApartamento(id: string, entrada: unknown): Promise<R
     where: { id, organizationId: ctx.organizacaoId, arquivadoEm: null },
     select: { id: true, propriedadeId: true },
   });
-  if (!apto) return falha("Esse apartamento não existe mais.");
+  if (!apto) return falha("Esse imóvel não existe mais.");
   const conflito = await conflitoDeIdentificacao(apto.propriedadeId, dados.data.identificacao, apto.id);
   if (conflito) return falha(conflito, { identificacao: conflito });
 
@@ -86,7 +86,7 @@ export async function gerarApartamentos(entrada: unknown): Promise<Resultado<{ c
   const propriedade = await propriedadePrincipal(ctx);
   if (!propriedade) return falha("Não encontrei o residencial desta conta.");
 
-  const planejados = gerarIdentificacoes(dados.data);
+  const planejados = dados.data.modo === "CASAS" ? numerarCasas(dados.data.quantidade) : gerarIdentificacoes(dados.data);
   const existentes = new Set(
     (
       await db.apartamento.findMany({ where: { propriedadeId: propriedade.id }, select: { identificacao: true } })
@@ -110,7 +110,6 @@ export async function gerarApartamentos(entrada: unknown): Promise<Resultado<{ c
         organizationId: ctx.organizacaoId,
         apartamentoId: a.id,
         para: "LIVRE" as const,
-        motivo: "Cadastro do apartamento",
         usuarioId: ctx.usuario.id,
       })),
     });
@@ -129,8 +128,8 @@ export async function mudarStatus(id: string, entrada: unknown): Promise<Resulta
     where: { id, organizationId: ctx.organizacaoId, arquivadoEm: null },
     select: { id: true, status: true },
   });
-  if (!apto) return falha("Esse apartamento não existe mais.");
-  if (apto.status === dados.data.status) return falha(`O apartamento já está como ${STATUS[apto.status].rotulo}.`);
+  if (!apto) return falha("Esse imóvel não existe mais.");
+  if (apto.status === dados.data.status) return falha(`Ele já está como ${STATUS[apto.status].rotulo}.`);
   const bloqueio = await bloqueioPorContrato(ctx.organizacaoId, apto.id, dados.data.status);
   if (bloqueio) return falha(bloqueio);
 
@@ -154,12 +153,12 @@ export async function mudarStatus(id: string, entrada: unknown): Promise<Resulta
 export async function arquivarApartamento(id: string): Promise<Resultado> {
   const ctx = await exigirContexto();
   const ativo = await db.contrato.findFirst({ where: { organizationId: ctx.organizacaoId, apartamentoId: id, status: "ATIVO" } });
-  if (ativo) return falha("Este apto tem contrato ativo. Encerre o contrato antes de arquivar.");
+  if (ativo) return falha("Este imóvel tem contrato ativo. Encerre o contrato antes de arquivar.");
   const { count } = await db.apartamento.updateMany({
     where: { id, organizationId: ctx.organizacaoId, arquivadoEm: null },
     data: { arquivadoEm: new Date() },
   });
-  if (count === 0) return falha("Esse apartamento não existe mais.");
+  if (count === 0) return falha("Esse imóvel não existe mais.");
   return sucesso();
 }
 

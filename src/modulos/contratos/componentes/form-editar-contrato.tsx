@@ -27,7 +27,7 @@ export function FormEditarContrato({
   const aluguel = useWatch({ control: form.control, name: "valorAluguel" });
 
   return (
-    <form onSubmit={enviar} noValidate className="flex max-w-3xl flex-col gap-7">
+    <form method="post" onSubmit={enviar} noValidate className="flex max-w-3xl flex-col gap-7">
       <CampoMoeda
         control={form.control}
         name="valorAluguel"

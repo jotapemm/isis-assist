@@ -7,6 +7,7 @@ import { useState } from "react";
 import type { z } from "zod";
 import { AvisoErro, CampoPercentual, CampoSelecao, CampoSenha, CampoTexto } from "@/components/campos/campos";
 import { useEnviar } from "@/components/campos/use-enviar";
+import { EscolhaTipoResidencial } from "@/components/campos/escolha-tipo-residencial";
 import { FieldGroup } from "@/components/ui/field";
 import { authClient, mensagemDeErro } from "@/lib/auth-client";
 import { mascararCEP, mascararCpfCnpj, mascararTelefone, somenteDigitos } from "@/lib/mascaras";
@@ -103,6 +104,11 @@ export function FormEndereco({ inicial }: { inicial: DadosEndereco }) {
     >
       <FieldGroup className="grid grid-cols-6 gap-5">
         <CampoTexto control={form.control} name="nome" rotulo="Nome do residencial" className="col-span-6" />
+        <div className="col-span-6 flex flex-col gap-2.5">
+          <p className="text-sm font-medium">Tipo</p>
+          <EscolhaTipoResidencial control={form.control} />
+          <p className="text-sm text-muted-foreground">Muda as palavras do app e o desenho do mapa. Nada do que já foi cadastrado se perde.</p>
+        </div>
         <CampoTexto
           control={form.control}
           name="cep"

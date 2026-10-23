@@ -2,7 +2,7 @@
 
 > Arquitetura e roteiro de implementação. Versão 1 — aprovado em 21/10/2026.
 
-**Andamento:** Fase 0 concluída (21/10/2026). Fase 1 e Fase 2 concluídas (22/10/2026). Próxima: Fase 3 — Financeiro.
+**Andamento:** Fase 0 concluída (21/10/2026). Fases 1, 2 e 3 concluídas (22/10/2026). Próxima: Fase 4 — Manutenções.
 
 Sistema web (PWA) de gestão de aluguéis residenciais para substituir as planilhas da proprietária.
 Prioridades, nesta ordem: **simples para quem não é técnica**, **ótimo no celular**, **bonito**.
@@ -297,6 +297,13 @@ Cada fase termina com o projeto rodando e o seed atualizado para demonstrar o qu
 ## 7. Pontos em aberto
 
 - **Planilhas atuais da cliente** — uma cópia (mesmo anonimizada) valida o modelo e define a importação.
+  A cliente vai confirmar a formatação antes da Fase 7.
+- ~~Residencial de casas~~ — resolvido na Fase 3: cada residencial tem um tipo (`EDIFICIO` ou `CASAS`). Com casas,
+  a numeração é em sequência (Casa 01, 02, 03…), o mapa vira uma vila e os textos trocam "apartamento" por "casa"
+  ([src/modulos/apartamentos/vocabulario.ts](../src/modulos/apartamentos/vocabulario.ts)).
+- **Rotina diária** — `GET /api/cron/diario` (com `Authorization: Bearer CRON_SECRET`) gera as cobranças do mês e
+  atualiza IGP-M/IPCA. Agendar no deploy (Vercel Cron ou cron da VPS). Sem ela o sistema funciona: as telas
+  também geram as cobranças do mês quando abrem.
 - ~~Banco local~~ — resolvido na Fase 0 com `prisma dev` (Postgres local do Prisma, sem Docker nem senha).
   Para usar o PostgreSQL 17 instalado, basta trocar as URLs no `.env`.
 - **Hospedagem e custo** — decidir na Fase 8. Para vender, Vercel exige o plano Pro (o gratuito é só para uso

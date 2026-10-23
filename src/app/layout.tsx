@@ -26,7 +26,7 @@ const youngSerif = Young_Serif({
 
 export const metadata: Metadata = {
   title: { default: "Isis-Assist", template: "%s · Isis-Assist" },
-  description: "Gestão de aluguéis do seu residencial: apartamentos, inquilinos, contratos e recebimentos.",
+  description: "Gestão de aluguéis do seu residencial: imóveis, inquilinos, contratos e recebimentos.",
   applicationName: "Isis-Assist",
   appleWebApp: { capable: true, title: "Isis-Assist", statusBarStyle: "default" },
   formatDetection: { telephone: false },

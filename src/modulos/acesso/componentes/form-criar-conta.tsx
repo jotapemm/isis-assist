@@ -31,7 +31,7 @@ export function FormCriarConta() {
   }
 
   return (
-    <form onSubmit={form.handleSubmit(criar)} noValidate>
+    <form method="post" onSubmit={form.handleSubmit(criar)} noValidate>
       <FieldGroup>
         <CampoTexto control={form.control} name="nome" rotulo="Seu nome" autoComplete="name" autoCapitalize="words" autoFocus />
         <CampoTexto

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { MB, problemaNoArquivo } from "../arquivos/regras";
 import { linkTelefone, linkWhatsApp } from "../../lib/whatsapp";
-import { gerarIdentificacoes } from "./lote";
+import { gerarIdentificacoes, numerarCasas } from "./lote";
+import { vocabulario } from "./vocabulario";
 import { compararIdentificacao, nomeAndar } from "./status";
 
 describe("geração em lote", () => {
@@ -65,5 +66,24 @@ describe("regras de arquivo", () => {
   it("documento aceita PDF", () => {
     expect(problemaNoArquivo("DOCUMENTO", "application/pdf", 3 * MB)).toBeNull();
     expect(problemaNoArquivo("DOCUMENTO", "application/zip", 1 * MB)).toMatch(/PDF ou uma foto/);
+  });
+});
+
+describe("residencial de casas", () => {
+  it("numera em sequência com dois dígitos", () => {
+    expect(numerarCasas(3).map((c) => c.identificacao)).toEqual(["01", "02", "03"]);
+    expect(numerarCasas(12).at(-1)).toEqual({ identificacao: "12", andar: null });
+    expect(numerarCasas(120)[0].identificacao).toBe("001");
+  });
+
+  it("concorda o vocabulário em gênero", () => {
+    const casa = vocabulario("CASAS");
+    const apto = vocabulario("EDIFICIO");
+    expect(`${casa.nenhum} ${casa.singular} ${casa.cadastrado}`).toBe("Nenhuma casa cadastrada");
+    expect(`${apto.nenhum} ${apto.singular} ${apto.cadastrado}`).toBe("Nenhum apartamento cadastrado");
+    expect(`Alugar ${casa.este} ${casa.singular}`).toBe("Alugar esta casa");
+    expect(casa.nome("01")).toBe("Casa 01");
+    expect(`Quem vai morar ${apto.no} ${apto.nomeMinusculo("203")}?`).toBe("Quem vai morar no apto 203?");
+    expect(`Quem vai morar ${casa.no} ${casa.nomeMinusculo("03")}?`).toBe("Quem vai morar na casa 03?");
   });
 });

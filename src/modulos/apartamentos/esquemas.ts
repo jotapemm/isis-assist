@@ -25,16 +25,27 @@ export const esquemaApartamento = z.object({
   observacoes: z.string().trim().max(2000, "Texto longo demais."),
 });
 
-export const esquemaLote = z.object({
-  andares: z.number().int().min(1, "Pelo menos 1 andar.").max(LIMITES_LOTE.andares, `No máximo ${LIMITES_LOTE.andares} andares.`),
-  porAndar: z
-    .number()
-    .int()
-    .min(1, "Pelo menos 1 por andar.")
-    .max(LIMITES_LOTE.porAndar, `No máximo ${LIMITES_LOTE.porAndar} por andar.`),
-  comTerreo: z.boolean(),
-  valorReferencia: z.number().int().min(0).max(100_000_00, "Valor alto demais. Confira."),
-});
+const valorReferenciaLote = z.number().int().min(0).max(100_000_00, "Valor alto demais. Confira.");
+
+/** Prédio: andares × aptos por andar. Casas: só a quantidade (Casa 01, 02…). */
+export const esquemaLote = z.discriminatedUnion("modo", [
+  z.object({
+    modo: z.literal("ANDARES"),
+    andares: z.number().int().min(1, "Pelo menos 1 andar.").max(LIMITES_LOTE.andares, `No máximo ${LIMITES_LOTE.andares} andares.`),
+    porAndar: z
+      .number()
+      .int()
+      .min(1, "Pelo menos 1 por andar.")
+      .max(LIMITES_LOTE.porAndar, `No máximo ${LIMITES_LOTE.porAndar} por andar.`),
+    comTerreo: z.boolean(),
+    valorReferencia: valorReferenciaLote,
+  }),
+  z.object({
+    modo: z.literal("CASAS"),
+    quantidade: z.number().int().min(1, "Pelo menos 1 casa.").max(LIMITES_LOTE.casas, `No máximo ${LIMITES_LOTE.casas} casas.`),
+    valorReferencia: valorReferenciaLote,
+  }),
+]);
 
 export const esquemaMudarStatus = z.object({
   status: z.enum(STATUS_APARTAMENTO, "Escolha um status."),

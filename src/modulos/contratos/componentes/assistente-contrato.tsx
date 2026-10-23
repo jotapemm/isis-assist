@@ -15,13 +15,13 @@ import { formatarData, formatarMoeda } from "@/lib/formatar";
 import { mascararCPF, mascararTelefone, somenteDigitos } from "@/lib/mascaras";
 import { cn } from "@/lib/utils";
 import { STATUS } from "@/modulos/apartamentos/status";
+import { type Vocabulario, vocabulario } from "@/modulos/apartamentos/vocabulario";
 import { criarContrato } from "../acoes";
 import type { DadosAssistente } from "../consultas";
 import { type DadosNovoContrato, esquemaNovoContrato } from "../esquemas";
 import { INDICES } from "../reajuste";
 import { CampoCaucao, CampoFiador, CampoPrazo, CampoReajuste, CampoVencimento } from "./campos-contrato";
 
-const PASSOS = ["Apartamento", "Inquilino", "Valores e prazo", "Confirmar"] as const;
 
 const normalizar = (texto: string) => texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
@@ -63,6 +63,8 @@ export function AssistenteContrato({
   });
   const { enviar, pendente, erro } = useEnviar(form, criarContrato, "Contrato ativado.", { sempreMostrarErro: true });
 
+  const v = vocabulario(dados.tipo);
+  const PASSOS = [v.Singular, "Inquilino", "Valores e prazo", "Confirmar"];
   const [passo, setPasso] = useState(aptoInicial ? (inqInicial ? 2 : 1) : 0);
   const valores = useWatch({ control: form.control });
   const apto = dados.aptos.find((a) => a.id === valores.apartamentoId);
@@ -140,12 +142,12 @@ export function AssistenteContrato({
       )}
 
       {passo === 0 && (
-        <PassoApartamento dados={dados} selecionado={valores.apartamentoId ?? ""} aoEscolher={escolherApto} />
+        <PassoApartamento v={v} dados={dados} selecionado={valores.apartamentoId ?? ""} aoEscolher={escolherApto} />
       )}
 
       {passo === 1 && (
         <section>
-          <h2 className="mb-4 font-heading text-2xl">Quem vai morar no apto {apto?.identificacao}?</h2>
+          <h2 className="mb-4 font-heading text-2xl">Quem vai morar {v.no} {v.nomeMinusculo(apto?.identificacao ?? "")}?</h2>
           {valores.cadastrarInquilino ? (
             <div className="flex flex-col gap-5 rounded-2xl border bg-card p-4 sm:p-5">
               <p className="text-sm text-muted-foreground">
@@ -209,7 +211,7 @@ export function AssistenteContrato({
             rotulo="Aluguel mensal"
             descricao={
               apto?.valorReferencia
-                ? `Referência do apto ${apto.identificacao}: ${formatarMoeda(apto.valorReferencia)}.`
+                ? `Referência ${v.do} ${v.nomeMinusculo(apto.identificacao)}: ${formatarMoeda(apto.valorReferencia)}.`
                 : undefined
             }
             className="sm:max-w-64"
@@ -239,7 +241,7 @@ export function AssistenteContrato({
         <section className="flex flex-col gap-5">
           <h2 className="font-heading text-2xl">Confira e ative</h2>
           <dl className="divide-y rounded-2xl border bg-card">
-            <Linha rotulo="Apartamento" valor={`Apto ${apto.identificacao}`} aoAlterar={() => setPasso(0)} />
+            <Linha rotulo={v.Singular} valor={v.nome(apto.identificacao)} aoAlterar={() => setPasso(0)} />
             <Linha
               rotulo="Inquilino"
               valor={
@@ -283,7 +285,7 @@ export function AssistenteContrato({
           </dl>
 
           <p className="rounded-xl bg-muted/70 px-4 py-3 text-sm">
-            Ao ativar, o apto {apto.identificacao} passa para <strong className={STATUS.OCUPADO.texto}>Ocupado</strong>
+            Ao ativar, {v.o} {v.nomeMinusculo(apto.identificacao)} passa para <strong className={STATUS.OCUPADO.texto}>Ocupado</strong>
             {valores.cadastrarInquilino && ` e ${nomeInquilino?.split(" ")[0]} entra na lista de inquilinos`}.
           </p>
           <AvisoErro mensagem={erro} />
@@ -315,10 +317,12 @@ function Linha({ rotulo, valor, aoAlterar }: { rotulo: string; valor: React.Reac
 }
 
 function PassoApartamento({
+  v,
   dados,
   selecionado,
   aoEscolher,
 }: {
+  v: Vocabulario;
   dados: DadosAssistente;
   selecionado: string;
   aoEscolher: (id: string) => void;
@@ -329,10 +333,10 @@ function PassoApartamento({
 
   return (
     <section className="flex flex-col gap-5">
-      <h2 className="font-heading text-2xl">Qual apartamento?</h2>
+      <h2 className="font-heading text-2xl">Qual {v.singular}?</h2>
       {disponiveis.length === 0 && emObra.length === 0 ? (
         <p className="rounded-2xl border bg-card px-4 py-8 text-center text-muted-foreground">
-          Todos os apartamentos estão alugados. Para alugar um deles de novo, encerre o contrato atual primeiro.
+          {v.o === "a" ? "Todas as" : "Todos os"} {v.plural} estão {v.alugados}. Para alugar de novo, encerre o contrato atual primeiro.
         </p>
       ) : (
         <>
@@ -352,8 +356,8 @@ function PassoApartamento({
       {alugados.length > 0 && (
         <p className="text-sm text-muted-foreground">
           {alugados.length === 1
-            ? "1 apartamento alugado não aparece"
-            : `${alugados.length} apartamentos alugados não aparecem`}{" "}
+            ? `1 ${v.singular} ${v.alugados.slice(0, -1)} não aparece`
+            : `${alugados.length} ${v.plural} ${v.alugados} não aparecem`}{" "}
           aqui.
         </p>
       )}

@@ -7,7 +7,7 @@ export default function LayoutPublico({ children }: { children: React.ReactNode 
       <aside className="hidden flex-col overflow-hidden bg-[#2c3fa3] px-10 pt-10 text-white lg:flex xl:px-14 xl:pt-14">
         <Logotipo sobreEscuro />
         <p className="mt-5 max-w-sm text-lg leading-snug text-white/75">
-          Apartamentos, inquilinos e aluguéis do residencial.
+          Imóveis, inquilinos e aluguéis do residencial.
         </p>
         {/* O prédio fica de pé na calçada, no rodapé do painel. */}
         <div className="mt-auto w-full max-w-[24rem] self-center pt-12">

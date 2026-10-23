@@ -3,6 +3,7 @@ import {
   CalendarCheck,
   FileSignature,
   Home,
+  House,
   type LucideIcon,
   Settings,
   Upload,
@@ -10,6 +11,7 @@ import {
   Wallet,
   Wrench,
 } from "lucide-react";
+import type { TipoResidencial } from "@/modulos/apartamentos/vocabulario";
 
 export type ItemNavegacao = { href: string; rotulo: string; icone: LucideIcon; curto?: string };
 
@@ -31,6 +33,12 @@ export const NAVEGACAO_SECUNDARIA: ItemNavegacao[] = [
 
 /** Os quatro atalhos fixos do menu inferior (celular); o resto fica em "Mais". */
 export const MENU_INFERIOR = ["/", "/apartamentos", "/financeiro", "/lembretes"];
+
+/** No residencial de casas, "Apartamentos" vira "Casas" (com o ícone de casa). */
+export function navegacaoPara(tipo: TipoResidencial): ItemNavegacao[] {
+  if (tipo === "EDIFICIO") return NAVEGACAO;
+  return NAVEGACAO.map((item) => (item.href === "/apartamentos" ? { ...item, rotulo: "Casas", curto: "Casas", icone: House } : item));
+}
 
 export function estaAtivo(href: string, caminho: string) {
   return href === "/" ? caminho === "/" : caminho === href || caminho.startsWith(`${href}/`);

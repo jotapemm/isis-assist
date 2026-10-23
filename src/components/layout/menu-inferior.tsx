@@ -2,33 +2,28 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { estaAtivo, MENU_INFERIOR, NAVEGACAO, NAVEGACAO_SECUNDARIA } from "./navegacao";
+import type { TipoResidencial } from "@/modulos/apartamentos/vocabulario";
+import { estaAtivo, MENU_INFERIOR, NAVEGACAO_SECUNDARIA, navegacaoPara } from "./navegacao";
+import { useTipoResidencial } from "./tipo-lembrado";
 import { SeletorTema } from "./seletor-tema";
 
 /**
- * Menu fixo no rodapé do celular: quatro atalhos + "Mais".
- * Sai pronto sem item marcado e acende o atual assim que o endereço é lido (exigência do Cache Components).
+ * Menu fixo no rodapé do celular: quatro atalhos + "Mais". Como a lista lateral, sai pronto na moldura
+ * sem item marcado e acende o atual quando o endereço e a conta são lidos (layout, dentro de <Suspense>).
  */
-export function MenuInferior({ sair }: { sair: React.ReactNode }) {
-  return (
-    <Suspense fallback={<ConteudoMenuInferior sair={sair} caminho="" />}>
-      <MenuInferiorAtivo sair={sair} />
-    </Suspense>
-  );
+export function MenuInferiorAtivo({ sair, tipo }: { sair: React.ReactNode; tipo: TipoResidencial | null }) {
+  return <MenuInferior sair={sair} caminho={usePathname()} tipo={tipo} />;
 }
 
-function MenuInferiorAtivo({ sair }: { sair: React.ReactNode }) {
-  return <ConteudoMenuInferior sair={sair} caminho={usePathname()} />;
-}
-
-function ConteudoMenuInferior({ sair, caminho }: { sair: React.ReactNode; caminho: string }) {
+export function MenuInferior({ sair, caminho, tipo }: { sair: React.ReactNode; caminho: string; tipo: TipoResidencial | null }) {
   const [maisAberto, setMaisAberto] = useState(false);
-  const fixos = NAVEGACAO.filter((item) => MENU_INFERIOR.includes(item.href));
-  const outros = [...NAVEGACAO.filter((item) => !MENU_INFERIOR.includes(item.href)), ...NAVEGACAO_SECUNDARIA];
+  const itens = navegacaoPara(useTipoResidencial(tipo));
+  const fixos = itens.filter((item) => MENU_INFERIOR.includes(item.href));
+  const outros = [...itens.filter((item) => !MENU_INFERIOR.includes(item.href)), ...NAVEGACAO_SECUNDARIA];
   const algumOutroAtivo = outros.some((item) => estaAtivo(item.href, caminho));
 
   return (

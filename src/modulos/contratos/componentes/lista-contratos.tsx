@@ -69,7 +69,7 @@ export function ListaContratos({ contratos, hoje }: { contratos: ContratoResumo[
             type="search"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder="Inquilino ou apartamento"
+            placeholder="Inquilino ou número"
             aria-label="Buscar contrato"
             className="pl-9"
           />

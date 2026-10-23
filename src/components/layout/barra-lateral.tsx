@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Suspense } from "react";
 import { Logotipo } from "@/components/marca";
 import { cn } from "@/lib/utils";
 import { AcoesRapidasDesktop } from "./acoes-rapidas";
-import { estaAtivo, type ItemNavegacao, NAVEGACAO, NAVEGACAO_SECUNDARIA } from "./navegacao";
+import type { TipoResidencial } from "@/modulos/apartamentos/vocabulario";
+import { estaAtivo, type ItemNavegacao, NAVEGACAO_SECUNDARIA, navegacaoPara } from "./navegacao";
+import { useTipoResidencial } from "./tipo-lembrado";
 
 /** Navegação do desktop. No celular quem faz esse papel é o MenuInferior. */
-export function BarraLateral({ rodape }: { rodape: React.ReactNode }) {
+export function BarraLateral({ rodape, navegacao }: { rodape: React.ReactNode; navegacao: React.ReactNode }) {
   return (
     <aside className="sticky top-0 hidden h-dvh flex-col border-r border-sidebar-border bg-sidebar px-4 py-6 lg:flex">
       <Link href="/" className="mb-8 px-2" aria-label="Isis-Assist — início">
@@ -18,25 +19,27 @@ export function BarraLateral({ rodape }: { rodape: React.ReactNode }) {
 
       <AcoesRapidasDesktop />
 
-      {/* O endereço atual só existe na hora do acesso: a lista sai pronta sem marcação e acende o item em seguida. */}
-      <Suspense fallback={<ListaLateral caminho={null} />}>
-        <ListaLateralAtiva />
-      </Suspense>
+      {navegacao}
 
       <div className="border-t border-sidebar-border pt-4">{rodape}</div>
     </aside>
   );
 }
 
-function ListaLateralAtiva() {
-  return <ListaLateral caminho={usePathname()} />;
+/**
+ * A lista sai pronta na moldura (sem item marcado, com o tipo lembrado no aparelho) e acende o item
+ * atual com o tipo verdadeiro quando o endereço e a conta são lidos (layout, dentro de <Suspense>).
+ */
+export function ListaLateralAtiva({ tipo }: { tipo: TipoResidencial | null }) {
+  return <ListaLateral caminho={usePathname()} tipo={tipo} />;
 }
 
-function ListaLateral({ caminho }: { caminho: string | null }) {
+export function ListaLateral({ caminho, tipo }: { caminho: string | null; tipo: TipoResidencial | null }) {
+  const itens = navegacaoPara(useTipoResidencial(tipo));
   const ativo = (href: string) => caminho !== null && estaAtivo(href, caminho);
   return (
     <nav aria-label="Principal" className="mt-6 flex flex-1 flex-col gap-1">
-      {NAVEGACAO.map((item) => (
+      {itens.map((item) => (
         <ItemBarra key={item.href} item={item} ativo={ativo(item.href)} />
       ))}
       <div className="my-3 h-px bg-sidebar-border" />

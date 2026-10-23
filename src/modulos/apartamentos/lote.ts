@@ -8,7 +8,7 @@ export type PlanoLote = {
   comTerreo: boolean;
 };
 
-export type AptoGerado = { identificacao: string; andar: number };
+export type AptoGerado = { identificacao: string; andar: number | null };
 
 /** Padrão brasileiro: andar seguido do número com dois dígitos (203 = 2º andar, apto 3; 01 = térreo). */
 export function gerarIdentificacoes({ andares, porAndar, comTerreo }: PlanoLote): AptoGerado[] {
@@ -22,4 +22,10 @@ export function gerarIdentificacoes({ andares, porAndar, comTerreo }: PlanoLote)
   return lista;
 }
 
-export const LIMITES_LOTE = { andares: 40, porAndar: 30 } as const;
+/** Residencial de casas: Casa 01, 02… (três dígitos a partir de 100 casas, para ordenar certo). */
+export function numerarCasas(quantidade: number): AptoGerado[] {
+  const digitos = Math.max(2, String(quantidade).length);
+  return Array.from({ length: quantidade }, (_, i) => ({ identificacao: String(i + 1).padStart(digitos, "0"), andar: null }));
+}
+
+export const LIMITES_LOTE = { andares: 40, porAndar: 30, casas: 300 } as const;

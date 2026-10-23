@@ -24,8 +24,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { arquivarApartamento, desarquivarApartamento } from "../acoes";
+import { type TipoResidencial, vocabulario } from "../vocabulario";
 
-export function AcoesApartamento({ id, identificacao }: { id: string; identificacao: string }) {
+export function AcoesApartamento({
+  id,
+  identificacao,
+  tipo,
+}: {
+  id: string;
+  identificacao: string;
+  tipo: TipoResidencial;
+}) {
+  const v = vocabulario(tipo);
+  const nome = v.nome(identificacao);
+  const arquivado = v.o === "a" ? "arquivada" : "arquivado";
   const router = useRouter();
   const [confirmando, setConfirmando] = useState(false);
   const [arquivando, iniciar] = useTransition();
@@ -38,12 +50,12 @@ export function AcoesApartamento({ id, identificacao }: { id: string; identifica
         return;
       }
       router.push("/apartamentos");
-      toast.success(`Apto ${identificacao} arquivado.`, {
+      toast.success(`${nome} ${arquivado}.`, {
         action: {
           label: "Desfazer",
           onClick: async () => {
             await desarquivarApartamento(id);
-            toast.success(`Apto ${identificacao} de volta.`);
+            toast.success(`${nome} de volta.`);
           },
         },
       });
@@ -73,9 +85,12 @@ export function AcoesApartamento({ id, identificacao }: { id: string; identifica
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="h-10 gap-3 text-destructive focus:text-destructive" onSelect={() => setConfirmando(true)}>
+            <DropdownMenuItem
+              className="h-10 gap-3 text-destructive focus:text-destructive"
+              onSelect={() => setConfirmando(true)}
+            >
               <Archive className="size-4" />
-              Arquivar apartamento
+              Arquivar {v.singular}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -84,9 +99,11 @@ export function AcoesApartamento({ id, identificacao }: { id: string; identifica
       <AlertDialog open={confirmando} onOpenChange={setConfirmando}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Arquivar o apto {identificacao}?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Arquivar {v.o} {v.nomeMinusculo(identificacao)}?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Ele sai da fachada e das listas. As fotos e o histórico continuam guardados.
+              {v.o === "a" ? "Ela" : "Ele"} sai do mapa e das listas. As fotos e o histórico continuam guardados.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

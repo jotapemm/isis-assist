@@ -1,20 +1,26 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { AcoesRapidasCelular } from "@/components/layout/acoes-rapidas";
-import { BarraLateral } from "@/components/layout/barra-lateral";
+import { BarraLateral, ListaLateral } from "@/components/layout/barra-lateral";
 import { MenuInferior } from "@/components/layout/menu-inferior";
 import { BotaoSair } from "@/components/layout/menu-usuario";
+import { ListaLateralDaConta, MenuInferiorDaConta } from "@/components/layout/navegacao-da-conta";
 import { UsuarioAtual, UsuarioAtualCarregando } from "@/components/layout/usuario-atual";
 import { Logotipo } from "@/components/marca";
 
 /**
- * Casca da área logada. Tudo aqui é estático (sai no "static shell" e aparece na hora);
- * só o bloco do usuário lê a sessão, atrás de um <Suspense>.
+ * Casca da área logada. Tudo aqui é estático (sai no "static shell" e aparece na hora); o que lê a
+ * sessão — o usuário e o item marcado no menu (com "Apartamentos" ou "Casas") — vem atrás de <Suspense>.
  */
 export default function LayoutApp({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[17rem_minmax(0,1fr)]">
       <BarraLateral
+        navegacao={
+          <Suspense fallback={<ListaLateral caminho={null} tipo={null} />}>
+            <ListaLateralDaConta />
+          </Suspense>
+        }
         rodape={
           <Suspense fallback={<UsuarioAtualCarregando />}>
             <UsuarioAtual />
@@ -37,7 +43,9 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      <MenuInferior sair={<BotaoSair />} />
+      <Suspense fallback={<MenuInferior sair={<BotaoSair />} caminho="" tipo={null} />}>
+        <MenuInferiorDaConta sair={<BotaoSair />} />
+      </Suspense>
       <AcoesRapidasCelular />
     </div>
   );

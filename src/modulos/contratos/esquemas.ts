@@ -69,7 +69,7 @@ export const esquemaEditarContrato = z.object(camposDoContrato).superRefine(conf
 export const MOTIVOS_ENCERRAMENTO = [
   "Fim do prazo",
   "Inquilino pediu para sair",
-  "Pedi o apartamento de volta",
+  "Pedi o imóvel de volta",
   "Falta de pagamento",
   "Outro motivo",
 ] as const;

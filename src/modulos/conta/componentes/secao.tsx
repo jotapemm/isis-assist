@@ -39,7 +39,7 @@ export function Secao({
 
   const classe = "grid gap-4 border-b py-8 first:pt-0 last:border-b-0 xl:grid-cols-[16rem_minmax(0,1fr)] xl:gap-8";
   return onSubmit ? (
-    <form onSubmit={onSubmit} noValidate className={classe}>
+    <form method="post" onSubmit={onSubmit} noValidate className={classe}>
       {corpo}
     </form>
   ) : (

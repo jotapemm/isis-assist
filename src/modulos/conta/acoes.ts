@@ -52,7 +52,7 @@ export async function criarResidencial(entrada: unknown): Promise<Resultado> {
     db.configuracao.create({
       data: { organizationId, locadorNome: user.name, locadorEmail: user.email },
     }),
-    db.propriedade.create({ data: { organizationId, nome: dados.data.nome } }),
+    db.propriedade.create({ data: { organizationId, nome: dados.data.nome, tipo: dados.data.tipo } }),
   ]);
 
   await auth.api.setActiveOrganization({ headers: await headers(), body: { organizationId } });
@@ -113,6 +113,7 @@ export async function salvarEndereco(entrada: unknown): Promise<Resultado> {
     where: { id: propriedade.id, organizationId: ctx.organizacaoId },
     data: {
       nome: d.nome,
+      tipo: d.tipo,
       cep: somenteDigitos(d.cep) || null,
       logradouro: d.logradouro || null,
       numero: d.numero || null,
