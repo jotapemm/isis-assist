@@ -12,6 +12,7 @@ import path from "node:path";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { hashPassword } from "better-auth/crypto";
 import { PrismaClient } from "../../src/generated/prisma/client";
+import { configDoBanco } from "../../src/server/banco-config";
 import { fimDoContrato, somarDias, somarMeses } from "../../src/lib/datas";
 import { hojeISO, isoDeDataCalendario, paraDataCalendario } from "../../src/lib/formatar";
 import { calcularEncargos, competenciaDe, vencimentoNoMes } from "../../src/modulos/financeiro/regras";
@@ -28,7 +29,7 @@ import {
   sorteador,
 } from "./dados";
 
-const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
+const db = new PrismaClient({ adapter: new PrismaPg(configDoBanco()) });
 
 const EMAIL = process.env.SEED_EMAIL ?? "demo@isis-assist.app";
 const SENHA = process.env.SEED_SENHA ?? "isis-demo-2026";

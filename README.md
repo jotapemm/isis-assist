@@ -26,8 +26,10 @@ npm run dev                 # http://localhost:3000
 **Índices de reajuste:** IGP-M e IPCA vêm da API pública do Banco Central (SGS) na hora de aplicar o reajuste e ficam guardados no banco. Sem internet, a tela pede o percentual à mão.
 
 **Banco fora do ar ("ECONNREFUSED" / "Failed to get session"):** o Postgres local do Prisma não volta sozinho
-quando o computador reinicia. O `npm run dev` agora tenta subir o banco antes de começar; se ainda assim der erro,
-rode `npm run db:subir`.
+quando o computador reinicia. O `npm run dev` tenta subir o banco antes de começar, e também remove as travas
+que um desligamento deixa para trás (sem isso o banco subia vazio). Se ainda assim der erro, rode `npm run db:subir`.
+
+**Publicar (Vercel + Supabase):** passo a passo em [docs/DEPLOY.md](docs/DEPLOY.md).
 
 **Financeiro:** as cobranças do mês aparecem sozinhas para os contratos ativos (ao abrir as telas ou pela rotina
 diária `GET /api/cron/diario`, protegida pelo `CRON_SECRET`). Recibos em PDF saem em `/api/recibos/<pagamento>`.

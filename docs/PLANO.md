@@ -308,4 +308,5 @@ Cada fase termina com o projeto rodando e o seed atualizado para demonstrar o qu
   Para usar o PostgreSQL 17 instalado, basta trocar as URLs no `.env`.
 - **Hospedagem e custo** — decidir na Fase 8. Para vender, Vercel exige o plano Pro (o gratuito é só para uso
   não comercial); alternativa mais barata: VPS com Coolify.
+  Para demonstrar já: Vercel + Supabase em São Paulo, passo a passo em [DEPLOY.md](DEPLOY.md).
 - **E-mail de recuperação de senha** — em dev o link aparece no terminal; em produção, Resend com domínio próprio.

@@ -45,3 +45,5 @@ next-env.d.ts
 
 # arquivos enviados no desenvolvimento (fotos, documentos)
 /.armazenamento
+
+/docs

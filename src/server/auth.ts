@@ -8,8 +8,14 @@ import { emailRedefinirSenha, enviarEmail } from "./email";
 
 const DIA = 60 * 60 * 24;
 
+// Na Vercel, sem BETTER_AUTH_URL o endereço de produção vem da própria Vercel, e os links de
+// pré-visualização (um por deploy) também podem entrar — senão o login responde "origem inválida".
+const naVercel = (host: string | undefined) => (host ? `https://${host}` : undefined);
+
 export const auth = betterAuth({
   appName: "Isis-Assist",
+  baseURL: process.env.BETTER_AUTH_URL ?? naVercel(process.env.VERCEL_PROJECT_PRODUCTION_URL),
+  trustedOrigins: [naVercel(process.env.VERCEL_URL), naVercel(process.env.VERCEL_BRANCH_URL)].filter((origem) => origem !== undefined),
   database: prismaAdapter(db, { provider: "postgresql" }),
   emailAndPassword: {
     enabled: true,

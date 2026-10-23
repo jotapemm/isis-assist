@@ -1,0 +1,22 @@
+import type { PoolConfig } from "pg";
+
+/**
+ * Opções do pool do pg — usadas pelo app (db.ts) e pelo seed.
+ *
+ * No banco da nuvem (Supabase) a conexão vai criptografada. O certificado do Supabase é assinado
+ * pela autoridade própria deles, que o Node não conhece, e o pg trata `sslmode=require` como
+ * verificação completa: com ele na URL, a conexão falharia. Por isso a URL vai como o Supabase
+ * mostra (sem sslmode) e aqui liga o TLS sem conferir a cadeia. Com sslmode na URL, vale a URL.
+ *
+ * Poucas conexões por instância: o pooler do Supabase (modo sessão) tem um teto baixo no plano grátis.
+ */
+export function configDoBanco(url = process.env.DATABASE_URL): PoolConfig {
+  if (!url) return { connectionString: url };
+  const { hostname, searchParams } = new URL(url);
+  if (["localhost", "127.0.0.1"].includes(hostname)) return { connectionString: url };
+  return {
+    connectionString: url,
+    max: 5,
+    ...(searchParams.has("sslmode") ? {} : { ssl: { rejectUnauthorized: false } }),
+  };
+}

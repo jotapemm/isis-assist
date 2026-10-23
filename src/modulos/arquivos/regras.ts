@@ -19,6 +19,13 @@ export const REGRAS = {
   COMPROVANTE: { tipos: TIPOS_DOCUMENTO as readonly string[], tamanhoMaximo: 10 * MB, aceitar: "image/*,application/pdf" },
 } as const;
 
+/**
+ * Na Vercel, o pedido que chega a uma função tem no máximo 4,5 MB: acima disso o envio falha antes de
+ * chegar ao código, com um erro que a usuária não entenderia. Fotos já saem reduzidas do navegador
+ * (~300 KB); o teto pega os PDFs. NEXT_PUBLIC_VERCEL_ENV é preenchida pela própria Vercel no build.
+ */
+const TETO_DA_HOSPEDAGEM = process.env.NEXT_PUBLIC_VERCEL_ENV ? 4 * MB : Infinity;
+
 /** Frase de erro para mostrar à usuária, ou null se o arquivo pode ser enviado. */
 export function problemaNoArquivo(categoria: DestinoArquivo["categoria"], tipo: string, tamanho: number) {
   const regra = REGRAS[categoria];
@@ -27,7 +34,8 @@ export function problemaNoArquivo(categoria: DestinoArquivo["categoria"], tipo: 
       ? "Esse arquivo não é uma foto. Envie JPG, PNG ou WebP."
       : "Envie um PDF ou uma foto (JPG, PNG ou WebP).";
   }
-  if (tamanho > regra.tamanhoMaximo) return `Arquivo grande demais. O limite é ${regra.tamanhoMaximo / MB} MB.`;
+  const limite = Math.min(regra.tamanhoMaximo, TETO_DA_HOSPEDAGEM);
+  if (tamanho > limite) return `Arquivo grande demais. O limite é ${limite / MB} MB.`;
   return null;
 }
 
