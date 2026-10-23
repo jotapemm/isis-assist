@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { AlertCircle, ArrowRight, Building2, CalendarClock, ChevronRight, TrendingUp, Upload } from "lucide-react";
+import { AlertCircle, ArrowRight, Building2, CalendarClock, ChevronRight, TrendingUp, Upload, Wrench } from "lucide-react";
 import { EsqueletoBloco } from "@/components/comum/esqueleto";
 import { EstadoVazio } from "@/components/comum/estado-vazio";
 import { Fachada } from "@/components/comum/fachada";
@@ -17,6 +17,8 @@ import { type Vocabulario, vocabulario } from "@/modulos/apartamentos/vocabulari
 import { obterResumoConta } from "@/modulos/conta/consultas";
 import { avisosDeContratos } from "@/modulos/contratos/consultas";
 import { atrasosParaPainel } from "@/modulos/financeiro/consultas";
+import { avisosDeManutencao } from "@/modulos/manutencoes/consultas";
+import { abertaHa, numeroOS, PRIORIDADE } from "@/modulos/manutencoes/regras";
 import { exigirContexto } from "@/server/contexto";
 
 export const metadata: Metadata = { title: "Início" };
@@ -31,11 +33,12 @@ export default function PaginaInicio() {
 
 async function Painel() {
   const ctx = await exigirContexto();
-  const [{ propriedade }, aptos, avisos, atrasos] = await Promise.all([
+  const [{ propriedade }, aptos, avisos, atrasos, consertos] = await Promise.all([
     obterResumoConta(ctx),
     listarApartamentos(ctx),
     avisosDeContratos(ctx),
     atrasosParaPainel(ctx),
+    avisosDeManutencao(ctx),
   ]);
   const agora = new Date();
   const hoje = new Intl.DateTimeFormat("pt-BR", {
@@ -79,7 +82,7 @@ async function Painel() {
         </EstadoVazio>
       ) : (
         <>
-          <Avisos avisos={avisos} atrasos={atrasos} v={v} />
+          <Avisos avisos={avisos} atrasos={atrasos} consertos={consertos} v={v} />
           <section aria-labelledby="titulo-fachada" className="rounded-3xl border bg-card p-3 sm:p-6">
             <header className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
@@ -123,14 +126,16 @@ async function Painel() {
   );
 }
 
-/** Reajustes chegando e contratos terminando — some quando não há nada para olhar. */
+/** Atrasos, consertos urgentes, reajustes chegando e contratos terminando — some quando não há nada para olhar. */
 function Avisos({
   avisos,
   atrasos,
+  consertos,
   v,
 }: {
   avisos: Awaited<ReturnType<typeof avisosDeContratos>>;
   atrasos: Awaited<ReturnType<typeof atrasosParaPainel>>;
+  consertos: Awaited<ReturnType<typeof avisosDeManutencao>>;
   v: Vocabulario;
 }) {
   const itens = [
@@ -145,6 +150,13 @@ function Avisos({
           },
         ]
       : []),
+    ...consertos.map((os) => ({
+      id: `os-${os.id}`,
+      href: `/manutencoes/${os.id}`,
+      icone: Wrench,
+      texto: `${PRIORIDADE[os.prioridade].rotulo}: ${os.titulo} (${os.apartamento ? v.nomeMinusculo(os.apartamento.identificacao) : "área comum"}, ${numeroOS(os.numero)})`,
+      quando: abertaHa(os.abertaEm, avisos.hoje),
+    })),
     ...avisos.reajustes.map((c) => ({
       id: `r-${c.id}`,
       href: `/contratos/${c.id}`,

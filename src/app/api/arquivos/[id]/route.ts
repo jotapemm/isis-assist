@@ -21,9 +21,10 @@ export async function GET(request: Request, { params }: RouteContext<"/api/arqui
       "Content-Type": arquivo.tipoMime,
       "Content-Length": String(conteudo.byteLength),
       "Content-Disposition": `${baixar ? "attachment" : "inline"}; filename*=UTF-8''${nome}`,
-      // Foto de apto nunca muda de conteúdo: pode ficar no cache do aparelho (nunca em cache compartilhado).
+      // Foto (do imóvel ou do conserto) nunca muda de conteúdo: pode ficar no cache do aparelho (nunca em cache compartilhado).
       // Documento pessoal (RG, CPF…) e contrato não ficam guardados no aparelho depois que a pessoa sai da conta.
-      "Cache-Control": arquivo.categoria === "FOTO_APTO" ? "private, max-age=31536000, immutable" : "private, no-store",
+      "Cache-Control":
+        arquivo.categoria === "FOTO_APTO" || arquivo.categoria === "FOTO_OS" ? "private, max-age=31536000, immutable" : "private, no-store",
       "X-Content-Type-Options": "nosniff",
     },
   });

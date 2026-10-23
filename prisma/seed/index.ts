@@ -26,6 +26,7 @@ import {
   DESPESAS_MENSAIS,
   emailFicticio,
   INQUILINOS,
+  PRESTADORES,
   rgFicticio,
   sorteador,
 } from "./dados";
@@ -97,6 +98,7 @@ async function main() {
   await semearInquilinos(organizationId);
   await semearContratos(organizationId, userId);
   await semearFinanceiro(organizationId, userId);
+  await semearManutencoes(organizationId, userId);
 
   console.log(`Conta de demonstração pronta: ${EMAIL} (senha em SEED_SENHA no .env).`);
 }
@@ -383,6 +385,88 @@ async function semearFinanceiro(organizationId: string, usuarioId: string) {
 
   const emAberto = await db.cobranca.count({ where: { organizationId, status: { in: ["PENDENTE", "PARCIAL"] } } });
   console.log(`Financeiro: ${recebidos.length} pagamentos, ${emAberto} cobranças em aberto e ${despesas.length} despesas.`);
+}
+
+/**
+ * Fase 4: prestadores e ordens de serviço que conversam com o resto da demonstração — o vazamento do
+ * 301 (em Manutenção), a reforma do 104, a tomada do 202 (ocupado: selo 🔧 no mapa) e as despesas de
+ * conserto do Financeiro, ligadas à OS que as gerou.
+ */
+async function semearManutencoes(organizationId: string, usuarioId: string) {
+  const hoje = hojeISO();
+  const prestador = new Map<string, string>();
+  for (const p of PRESTADORES) {
+    const { id } = await db.prestador.create({
+      data: { organizationId, ...p, telefone: celularFicticio(), createdAt: diasAtras(400) },
+      select: { id: true },
+    });
+    prestador.set(p.especialidade, id);
+  }
+  const aptos = await db.apartamento.findMany({ where: { organizationId }, select: { id: true, identificacao: true } });
+  const apto = (identificacao: string) => aptos.find((a) => a.identificacao === identificacao)!.id;
+  const despesa = async (descricao: string) => {
+    const d = await db.despesa.findFirstOrThrow({ where: { organizationId, descricao }, select: { id: true, data: true } });
+    return { id: d.id, data: isoDeDataCalendario(d.data) };
+  };
+  // O 301 entrou em Manutenção no seed dos apartamentos; a OS do vazamento é a dona dessa mudança.
+  const historico301 = await db.historicoStatus.findFirstOrThrow({
+    where: { organizationId, apartamentoId: apto("301"), para: "MANUTENCAO" },
+    select: { id: true, createdAt: true },
+  });
+
+  const [portao, chuveiro, pintura] = await Promise.all([
+    despesa("Conserto do motor do portão"),
+    despesa("Troca da resistência do chuveiro"),
+    despesa("Pintura completa"),
+  ]);
+  const ordens = [
+    { titulo: "Motor do portão travando", prioridade: "ALTA", status: "CONCLUIDA", prestador: "Serralheiro", abertaEm: somarDias(portao.data, -3), concluidaEm: portao.data, custoFinal: 350_00, despesaId: portao.id, solucao: "Trocou a engrenagem do motor e lubrificou o trilho." },
+    { titulo: "Chuveiro não esquenta", apto: "102", prioridade: "MEDIA", status: "CONCLUIDA", prestador: "Eletricista", abertaEm: somarDias(chuveiro.data, -2), concluidaEm: chuveiro.data, custoFinal: 85_00, despesaId: chuveiro.id, solucao: "Resistência queimada; trocada por uma de 7.500 W." },
+    { titulo: "Pintura completa", apto: "104", prioridade: "MEDIA", status: "CONCLUIDA", prestador: "Pintor", abertaEm: somarDias(pintura.data, -20), concluidaEm: pintura.data, custoEstimado: 3000_00, custoFinal: 2800_00, despesaId: pintura.id, descricao: "Paredes e teto de todos os cômodos, com massa corrida na sala." },
+    { titulo: "Troca do piso da cozinha", apto: "104", prioridade: "ALTA", status: "EM_ANDAMENTO", prestador: "Pedreiro", abertaEm: somarDias(pintura.data, 2), custoEstimado: 1800_00, descricao: "Piso cerâmico trincado em várias peças. Orçamento com material." },
+    { titulo: "Vazamento no banheiro", apto: "301", prioridade: "URGENTE", status: "EM_ANDAMENTO", prestador: "Encanador", abertaEm: hojeISO(historico301.createdAt), custoEstimado: 450_00, statusAnteriorApto: "LIVRE", descricao: "Água vazando atrás do vaso e manchando o teto do 201." },
+    { titulo: "Tomada da cozinha sem energia", apto: "202", prioridade: "MEDIA", status: "ABERTA", prestador: "Eletricista", abertaEm: somarDias(hoje, -3), descricao: "A Fernanda avisou pelo WhatsApp. Já testou o disjuntor." },
+    { titulo: "Lâmpada queimada no corredor do 2º andar", prioridade: "BAIXA", status: "ABERTA", abertaEm: somarDias(hoje, -1) },
+  ] as const;
+
+  const numeradas = [...ordens].sort((a, b) => a.abertaEm.localeCompare(b.abertaEm));
+  for (const [i, os] of numeradas.entries()) {
+    const numero = i + 1;
+    const criada = await db.ordemServico.create({
+      data: {
+        organizationId,
+        numero,
+        apartamentoId: "apto" in os ? apto(os.apto) : null,
+        prestadorId: "prestador" in os ? prestador.get(os.prestador)! : null,
+        titulo: os.titulo,
+        descricao: "descricao" in os ? os.descricao : null,
+        prioridade: os.prioridade,
+        status: os.status,
+        custoEstimado: "custoEstimado" in os ? os.custoEstimado : null,
+        custoFinal: "custoFinal" in os ? os.custoFinal : null,
+        abertaEm: paraDataCalendario(os.abertaEm),
+        concluidaEm: "concluidaEm" in os ? paraDataCalendario(os.concluidaEm) : null,
+        solucao: "solucao" in os ? os.solucao : null,
+        statusAnteriorApto: "statusAnteriorApto" in os ? os.statusAnteriorApto : null,
+        createdAt: meioDia(os.abertaEm),
+      },
+      select: { id: true },
+    });
+    if ("despesaId" in os) {
+      await db.despesa.update({
+        where: { id: os.despesaId },
+        data: { ordemServicoId: criada.id, descricao: `${os.titulo} (OS ${String(numero).padStart(4, "0")})` },
+      });
+    }
+    if (os.titulo === "Vazamento no banheiro") {
+      await db.historicoStatus.update({
+        where: { id: historico301.id },
+        data: { origem: "MANUTENCAO", motivo: `OS ${String(numero).padStart(4, "0")}: ${os.titulo}`, usuarioId },
+      });
+    }
+  }
+  await db.configuracao.update({ where: { organizationId }, data: { proximoNumeroOS: numeradas.length + 1 } });
+  console.log(`Manutenções: ${PRESTADORES.length} prestadores e ${numeradas.length} ordens de serviço.`);
 }
 
 main()

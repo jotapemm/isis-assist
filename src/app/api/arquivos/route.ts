@@ -4,7 +4,7 @@ import { armazenamento } from "@/server/armazenamento";
 import { type Contexto, obterContexto } from "@/server/contexto";
 import { db } from "@/server/db";
 
-const CATEGORIAS = ["FOTO_APTO", "DOCUMENTO", "CONTRATO_PDF", "COMPROVANTE"] as const satisfies DestinoArquivo["categoria"][];
+const CATEGORIAS = ["FOTO_APTO", "FOTO_OS", "DOCUMENTO", "CONTRATO_PDF", "COMPROVANTE"] as const satisfies DestinoArquivo["categoria"][];
 type Categoria = (typeof CATEGORIAS)[number];
 
 /** Cada categoria pertence a um tipo de registro; o registro precisa ser desta conta. */
@@ -15,6 +15,10 @@ async function vinculoDoDono(ctx: Contexto, categoria: Categoria, dados: FormDat
     case "FOTO_APTO": {
       const apto = await db.apartamento.findFirst({ where: { id: id("apartamentoId"), ...conta }, select: { id: true } });
       return apto && { apartamentoId: apto.id };
+    }
+    case "FOTO_OS": {
+      const os = await db.ordemServico.findFirst({ where: { id: id("ordemServicoId"), ...conta }, select: { id: true } });
+      return os && { ordemServicoId: os.id };
     }
     case "DOCUMENTO": {
       const inquilino = await db.inquilino.findFirst({ where: { id: id("inquilinoId"), ...conta }, select: { id: true } });

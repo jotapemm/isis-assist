@@ -22,7 +22,7 @@ export default function PaginaPrivacidade() {
           contratos e pagamentos.
         </li>
         <li>
-          Sobre os dados de <strong>inquilinos, fiadores e contatos de emergência</strong>, quem decide para que e como
+          Sobre os dados de <strong>inquilinos, fiadores, contatos de emergência e prestadores</strong>, quem decide para que e como
           usar é você: você é o <strong>controlador</strong>. O Isis-Assist é o <strong>operador</strong>: trata esses dados
           só para o sistema funcionar para você, conforme as suas instruções.
         </li>
@@ -50,8 +50,12 @@ export default function PaginaPrivacidade() {
           <strong>Fiadores:</strong> nome, CPF, telefone, e-mail e endereço.
         </li>
         <li>
-          <strong>Contratos e financeiro:</strong> datas, valores, reajustes, cobranças, pagamentos, recibos,
-          comprovantes e despesas.
+          <strong>Prestadores de serviço:</strong> nome, especialidade, telefone, e-mail, CPF ou CNPJ, chave PIX e
+          observações.
+        </li>
+        <li>
+          <strong>Contratos, financeiro e manutenções:</strong> datas, valores, reajustes, cobranças, pagamentos,
+          recibos, comprovantes, despesas, ordens de serviço e fotos dos consertos.
         </li>
         <li>
           Não pedimos dados sensíveis (saúde, religião, origem racial, biometria e afins) e não usamos cookies de propaganda
@@ -69,6 +73,10 @@ export default function PaginaPrivacidade() {
           Dados de inquilinos e fiadores: o controlador os usa para a locação e a fiança (execução de contrato), para
           cumprir obrigações legais, como o imposto de renda (art. 7º, II), e para cobrar o aluguel (exercício regular de
           direitos e proteção do crédito, art. 7º, VI e X).
+        </li>
+        <li>
+          Dados de prestadores: o controlador os usa para combinar e pagar os consertos (execução de contrato e
+          legítimo interesse, art. 7º, V e IX).
         </li>
         <li>
           Avisos pelo WhatsApp: só para quem aceitou. Para quem não aceitou, o sistema não oferece essa opção.

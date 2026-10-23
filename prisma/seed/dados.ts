@@ -125,3 +125,12 @@ export const DESPESAS_AVULSAS: { mesesAtras: number; dia: number; categoria: Cat
   { mesesAtras: 1, dia: 8, categoria: "MANUTENCAO", descricao: "Pintura completa", valor: 2800_00, apto: "104", observacao: "Mão de obra e tinta; a troca do piso vem depois" },
   { mesesAtras: 0, dia: 2, categoria: "MANUTENCAO", descricao: "Visita do encanador (orçamento do vazamento)", valor: 120_00, apto: "301" },
 ];
+
+/** Quem faz os consertos do Residencial Isis (Fase 4). */
+export const PRESTADORES: { nome: string; especialidade: string; chavePix?: string; observacoes?: string }[] = [
+  { nome: "Jorge Hidráulica", especialidade: "Encanador", observacoes: "Atende sábado de manhã. Cobra a visita (R$ 120) se não fizer o serviço." },
+  { nome: "Marcos Elétrica", especialidade: "Eletricista", chavePix: "marcos.eletrica@exemplo.com.br" },
+  { nome: "Pinturas Silva", especialidade: "Pintor" },
+  { nome: "Reformas Oliveira", especialidade: "Pedreiro", observacoes: "Faz piso e azulejo." },
+  { nome: "Portões Campinas", especialidade: "Serralheiro" },
+];

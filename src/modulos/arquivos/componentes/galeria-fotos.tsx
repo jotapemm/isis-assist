@@ -7,16 +7,22 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { apagarArquivo, definirCapa } from "@/modulos/arquivos/acoes";
-import { REGRAS } from "@/modulos/arquivos/regras";
+import { type DestinoArquivo, REGRAS } from "@/modulos/arquivos/regras";
 import { useEnvioArquivos } from "@/modulos/arquivos/use-envio";
 
 type Foto = { id: string; nomeOriginal: string };
 
 const url = (id: string) => `/api/arquivos/${id}`;
 
-/** Fotos do imóvel. A primeira é a capa; tocar numa foto abre em tamanho grande. `nome` = "Apto 203" ou "Casa 01". */
-export function GaleriaFotos({ apartamentoId, nome, fotos }: { apartamentoId: string; nome: string; fotos: Foto[] }) {
-  const { enviar, enviando } = useEnvioArquivos({ categoria: "FOTO_APTO", apartamentoId });
+type DestinoFoto = Extract<DestinoArquivo, { categoria: "FOTO_APTO" | "FOTO_OS" }>;
+
+/**
+ * Fotos do imóvel ou de um conserto (o "antes e depois" da ordem de serviço). Tocar numa foto abre em
+ * tamanho grande. No imóvel a primeira é a capa. `nome` = "Apto 203", "Casa 01", "OS 0007"…
+ */
+export function GaleriaFotos({ destino, nome, fotos }: { destino: DestinoFoto; nome: string; fotos: Foto[] }) {
+  const { enviar, enviando } = useEnvioArquivos(destino);
+  const comCapa = destino.categoria === "FOTO_APTO";
   const [aberta, setAberta] = useState<Foto | null>(null);
   const [confirmarApagar, setConfirmarApagar] = useState(false);
   const [ocupado, iniciar] = useTransition();
@@ -57,7 +63,7 @@ export function GaleriaFotos({ apartamentoId, nome, fotos }: { apartamentoId: st
             >
               <Image src={url(foto.id)} alt="" fill unoptimized sizes="(min-width: 640px) 33vw, 50vw" className="object-cover" />
             </button>
-            {i === 0 && fotos.length > 1 && (
+            {comCapa && i === 0 && fotos.length > 1 && (
               <span className="pointer-events-none absolute top-2 left-2 rounded-md bg-background/90 px-2 py-0.5 text-xs font-semibold">
                 Capa
               </span>
@@ -71,7 +77,7 @@ export function GaleriaFotos({ apartamentoId, nome, fotos }: { apartamentoId: st
             {enviando ? `Enviando ${enviando.atual} de ${enviando.total}…` : fotos.length ? "Adicionar fotos" : "Adicionar a primeira foto"}
             <input
               type="file"
-              accept={REGRAS.FOTO_APTO.aceitar}
+              accept={REGRAS[destino.categoria].aceitar}
               multiple
               className="sr-only"
               disabled={Boolean(enviando)}
@@ -88,7 +94,9 @@ export function GaleriaFotos({ apartamentoId, nome, fotos }: { apartamentoId: st
       <Dialog open={aberta !== null} onOpenChange={(abrir) => !abrir && fechar()}>
         <DialogContent className="max-w-3xl p-3 sm:p-4">
           <DialogTitle className="sr-only">Foto: {nome}</DialogTitle>
-          <DialogDescription className="sr-only">Foto em tamanho grande, com opções para usar como capa ou apagar.</DialogDescription>
+          <DialogDescription className="sr-only">
+            Foto em tamanho grande, com opções para {comCapa ? "usar como capa ou " : ""}apagar.
+          </DialogDescription>
           {aberta && (
             <>
               <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-muted">
@@ -111,7 +119,7 @@ export function GaleriaFotos({ apartamentoId, nome, fotos }: { apartamentoId: st
                     Apagar foto
                   </Button>
                 )}
-                {fotos[0]?.id !== aberta.id && !confirmarApagar && (
+                {comCapa && fotos[0]?.id !== aberta.id && !confirmarApagar && (
                   <Button variant="outline" disabled={ocupado} onClick={() => usarComoCapa(aberta)}>
                     <Star className="size-4" />
                     Usar como capa

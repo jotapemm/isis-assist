@@ -45,13 +45,15 @@ export async function listarApartamentos(ctx: Contexto) {
         select: { id: true },
       },
       contratos: { where: { status: "ATIVO" }, take: 1, select: { inquilino: { select: { nome: true } } } },
+      _count: { select: { ordensServico: { where: { status: { in: ["ABERTA", "EM_ANDAMENTO"] } } } } },
     },
   });
   return aptos
-    .map(({ arquivos, contratos, ...apto }) => ({
+    .map(({ arquivos, contratos, _count, ...apto }) => ({
       ...apto,
       capaId: arquivos[0]?.id ?? null,
       inquilino: contratos[0]?.inquilino.nome ?? null,
+      consertando: _count.ordensServico > 0,
     }))
     .sort((a, b) => (a.andar ?? -1) - (b.andar ?? -1) || compararIdentificacao(a.identificacao, b.identificacao));
 }

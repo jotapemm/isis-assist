@@ -96,22 +96,24 @@ model Verification {
 
 /// A conta do proprietário — o "tenant". Tudo do domínio pendura aqui.
 model Organization {
-  id           String        @id
-  name         String
-  slug         String        @unique
-  logo         String?
-  createdAt    DateTime
-  metadata     String?
-  members      Member[]
-  invitations  Invitation[]
-  configuracao Configuracao?
-  propriedades Propriedade[]
-  apartamentos Apartamento[]
-  inquilinos   Inquilino[]
-  contratos    Contrato[]
-  cobrancas    Cobranca[]
-  despesas     Despesa[]
-  arquivos     Arquivo[]
+  id            String         @id
+  name          String
+  slug          String         @unique
+  logo          String?
+  createdAt     DateTime
+  metadata      String?
+  members       Member[]
+  invitations   Invitation[]
+  configuracao  Configuracao?
+  propriedades  Propriedade[]
+  apartamentos  Apartamento[]
+  inquilinos    Inquilino[]
+  contratos     Contrato[]
+  cobrancas     Cobranca[]
+  despesas      Despesa[]
+  prestadores   Prestador[]
+  ordensServico OrdemServico[]
+  arquivos      Arquivo[]
 
   @@map("organization")
 }
@@ -163,6 +165,8 @@ model Configuracao {
   jurosMensalPercentual Decimal      @default(1) @db.Decimal(5, 2)
   diasCarencia          Int          @default(0)
   proximoNumeroRecibo   Int          @default(1)
+  /// Numeração das ordens de serviço, por conta ("OS nº 0007").
+  proximoNumeroOS       Int          @default(1)
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt
 
@@ -241,6 +245,7 @@ model Apartamento {
   arquivos        Arquivo[]
   contratos       Contrato[]
   despesas        Despesa[]
+  ordensServico   OrdemServico[]
 
   @@unique([propriedadeId, identificacao])
   @@index([organizationId])
@@ -355,6 +360,8 @@ model Arquivo {
   pagamento      Pagamento?       @relation(fields: [pagamentoId], references: [id], onDelete: Cascade)
   despesaId      String?
   despesa        Despesa?         @relation(fields: [despesaId], references: [id], onDelete: Cascade)
+  ordemServicoId String?
+  ordemServico   OrdemServico?    @relation(fields: [ordemServicoId], references: [id], onDelete: Cascade)
   enviadoPorId   String?
   createdAt      DateTime         @default(now())
 
@@ -364,6 +371,7 @@ model Arquivo {
   @@index([contratoId])
   @@index([pagamentoId])
   @@index([despesaId])
+  @@index([ordemServicoId])
   @@map("arquivo")
 }
 
@@ -582,6 +590,7 @@ model Despesa {
   observacao     String?
   /// Fase 4: despesa criada sozinha ao concluir uma ordem de serviço.
   ordemServicoId String?          @unique
+  ordemServico   OrdemServico?    @relation(fields: [ordemServicoId], references: [id], onDelete: SetNull)
   removidaEm     DateTime?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
@@ -589,4 +598,75 @@ model Despesa {
 
   @@index([organizationId, data])
   @@map("despesa")
+}
+
+// ─── Manutenções (Fase 4) ───
+
+/// Quem faz os consertos: encanador, eletricista, pintor…
+model Prestador {
+  id             String         @id @default(cuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  nome           String
+  especialidade  String?
+  telefone       String? // só dígitos, com DDD
+  email          String?
+  documento      String? // CPF ou CNPJ, só dígitos
+  chavePix       String?
+  observacoes    String?
+  arquivadoEm    DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  ordens         OrdemServico[]
+
+  @@index([organizationId])
+  @@map("prestador")
+}
+
+enum PrioridadeOS {
+  BAIXA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+enum StatusOS {
+  ABERTA
+  EM_ANDAMENTO
+  CONCLUIDA
+  CANCELADA
+}
+
+/// Ordem de serviço: um conserto num imóvel (ou na área comum), do pedido até o custo final.
+model OrdemServico {
+  id                 String             @id @default(cuid())
+  organizationId     String
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  numero             Int
+  /// Vazio = área comum do residencial.
+  apartamentoId      String?
+  apartamento        Apartamento?       @relation(fields: [apartamentoId], references: [id], onDelete: SetNull)
+  prestadorId        String?
+  prestador          Prestador?         @relation(fields: [prestadorId], references: [id], onDelete: SetNull)
+  titulo             String
+  descricao          String?
+  prioridade         PrioridadeOS       @default(MEDIA)
+  status             StatusOS           @default(ABERTA)
+  custoEstimado      Int? // centavos
+  custoFinal         Int? // centavos
+  abertaEm           DateTime           @db.Date
+  concluidaEm        DateTime?          @db.Date
+  /// O que foi feito (na conclusão) ou por que foi cancelada.
+  solucao            String?
+  /// Status do imóvel antes de a OS colocá-lo em Manutenção — para voltar a ele no fim.
+  statusAnteriorApto StatusApartamento?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  despesa            Despesa?
+  arquivos           Arquivo[]
+
+  @@unique([organizationId, numero])
+  @@index([organizationId, status])
+  @@index([apartamentoId])
+  @@map("ordem_servico")
 }

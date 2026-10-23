@@ -31,6 +31,10 @@ que um desligamento deixa para trás (sem isso o banco subia vazio). Se ainda as
 
 **Publicar (Vercel + Supabase):** passo a passo em [docs/DEPLOY.md](docs/DEPLOY.md).
 
+**Manutenções:** ordens de serviço numeradas (OS 0001…) com fotos e prestadores. Imóvel vazio pode ir para
+Manutenção ao abrir a ordem e voltar ao status de antes ao concluir; concluída com custo, a despesa entra sozinha
+no Financeiro ([src/modulos/manutencoes/](src/modulos/manutencoes/)).
+
 **LGPD:** cadastro com aceite dos Termos e da Política de Privacidade (`/termos`, `/privacidade`); cada inquilino
 tem "Baixar os dados" (JSON) e "Apagar dados pessoais" no menu ⋯ (nome e CPF ficam até o fim do prazo do imposto
 de renda e a rotina diária apaga depois — [src/modulos/inquilinos/privacidade.ts](src/modulos/inquilinos/privacidade.ts));

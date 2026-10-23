@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { STATUS, type StatusApartamento } from "../status";
-import type { JanelaApto } from "./mapa-fachada";
+import { type JanelaApto, rotuloConserto, SeloConserto } from "./mapa-fachada";
 import { MapaFachada } from "./mapa-fachada";
 import type { TipoResidencial } from "../vocabulario";
 
@@ -49,7 +49,7 @@ function Casinha({ casa, apagada }: { casa: JanelaApto; apagada: boolean }) {
   return (
     <Link
       href={`/apartamentos/${casa.id}`}
-      aria-label={`Casa ${casa.identificacao}, ${info.rotulo}${casa.inquilino ? `, ${casa.inquilino}` : ""}`}
+      aria-label={`Casa ${casa.identificacao}, ${info.rotulo}${casa.inquilino ? `, ${casa.inquilino}` : ""}${rotuloConserto(casa)}`}
       className={cn(
         "group flex flex-col rounded-lg outline-none transition-opacity focus-visible:ring-3 focus-visible:ring-ring/60",
         apagada && "opacity-25",
@@ -64,7 +64,10 @@ function Casinha({ casa, apagada }: { casa: JanelaApto; apagada: boolean }) {
           info.borda,
         )}
       >
-        <span className="truncate font-mono text-base leading-none font-bold tabular-nums sm:text-lg">{casa.identificacao}</span>
+        <span className="flex items-start justify-between gap-1">
+          <span className="truncate font-mono text-base leading-none font-bold tabular-nums sm:text-lg">{casa.identificacao}</span>
+          <SeloConserto apto={casa} />
+        </span>
         <span className={cn("flex min-w-0 items-center gap-1 text-xs font-semibold", info.texto)}>
           <Icone className="size-3.5 shrink-0" aria-hidden="true" />
           <span className="hidden truncate sm:inline">{casa.inquilino ? casa.inquilino.split(" ")[0] : info.rotulo}</span>

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -99,7 +100,19 @@ function Formulario({
     <>
       <SheetHeader>
         <SheetTitle>{despesa ? "Editar despesa" : "Lançar despesa"}</SheetTitle>
-        <SheetDescription>Conta paga do residencial: entra no relatório do mês e no lucro.</SheetDescription>
+        <SheetDescription>
+          {despesa?.ordemServicoId ? (
+            <>
+              Lançada ao concluir uma{" "}
+              <Link href={`/manutencoes/${despesa.ordemServicoId}`} className="text-primary underline-offset-4 hover:underline">
+                ordem de serviço
+              </Link>
+              . Para corrigir o custo, reabra a ordem e conclua de novo.
+            </>
+          ) : (
+            "Conta paga do residencial: entra no relatório do mês e no lucro."
+          )}
+        </SheetDescription>
       </SheetHeader>
 
       <div className="flex flex-col gap-5 px-4 pb-8">

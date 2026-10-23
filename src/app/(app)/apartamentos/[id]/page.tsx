@@ -2,19 +2,22 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ChevronRight, FileSignature } from "lucide-react";
+import { ChevronRight, FileSignature, Wrench } from "lucide-react";
 import { Bloco, Dados, VoltarPara } from "@/components/comum/blocos";
 import { EsqueletoBloco } from "@/components/comum/esqueleto";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { formatarData, formatarMoeda } from "@/lib/formatar";
+import { formatarData, formatarMoeda, hojeISO } from "@/lib/formatar";
 import { AcoesApartamento } from "@/modulos/apartamentos/componentes/acoes-apartamento";
-import { GaleriaFotos } from "@/modulos/apartamentos/componentes/galeria-fotos";
+import { GaleriaFotos } from "@/modulos/arquivos/componentes/galeria-fotos";
 import { HistoricoStatus } from "@/modulos/apartamentos/componentes/historico-status";
 import { MudarStatus } from "@/modulos/apartamentos/componentes/mudar-status";
 import { obterApartamento, vocabularioDaConta } from "@/modulos/apartamentos/consultas";
 import { nomeAndar } from "@/modulos/apartamentos/status";
 import { BotaoWhatsApp } from "@/modulos/inquilinos/componentes/botoes-contato";
+import { CartaoOrdem } from "@/modulos/manutencoes/componentes/pecas";
+import { ordensDoApartamento } from "@/modulos/manutencoes/consultas";
+import { emAberto } from "@/modulos/manutencoes/regras";
 import { exigirContexto } from "@/server/contexto";
 
 export const metadata: Metadata = { title: "Imóvel" };
@@ -32,7 +35,7 @@ export default function PaginaApartamento({ params }: PageProps<"/apartamentos/[
 async function Conteudo({ params }: { params: PageProps<"/apartamentos/[id]">["params"] }) {
   const { id } = await params;
   const ctx = await exigirContexto();
-  const [apto, v] = await Promise.all([obterApartamento(ctx, id), vocabularioDaConta(ctx)]);
+  const [apto, v, ordens] = await Promise.all([obterApartamento(ctx, id), vocabularioDaConta(ctx), ordensDoApartamento(ctx, id)]);
   if (!apto) notFound();
 
   const contratoAtivo = apto.contratos.find((c) => c.status === "ATIVO");
@@ -64,6 +67,10 @@ async function Conteudo({ params }: { params: PageProps<"/apartamentos/[id]">["p
         <TabsList className="mb-4">
           <TabsTrigger value="resumo">Resumo</TabsTrigger>
           <TabsTrigger value="inquilinos">Inquilinos</TabsTrigger>
+          <TabsTrigger value="manutencoes">
+            Manutenções
+            {ordens.some((o) => emAberto(o.status)) && <Wrench className="size-3.5 text-manutencao" aria-label="com conserto em aberto" />}
+          </TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
         </TabsList>
 
@@ -116,7 +123,7 @@ async function Conteudo({ params }: { params: PageProps<"/apartamentos/[id]">["p
           </Bloco>
 
           <Bloco titulo="Fotos" className="lg:col-span-2">
-            <GaleriaFotos apartamentoId={apto.id} nome={v.nome(apto.identificacao)} fotos={apto.arquivos} />
+            <GaleriaFotos destino={{ categoria: "FOTO_APTO", apartamentoId: apto.id }} nome={v.nome(apto.identificacao)} fotos={apto.arquivos} />
           </Bloco>
         </TabsContent>
 
@@ -140,6 +147,32 @@ async function Conteudo({ params }: { params: PageProps<"/apartamentos/[id]">["p
                       </span>
                       <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
                     </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Bloco>
+        </TabsContent>
+
+        <TabsContent value="manutencoes">
+          <Bloco
+            titulo="Consertos"
+            acoes={
+              <Button asChild variant="ghost" size="sm">
+                <Link href={`/manutencoes/nova?apto=${apto.id}`}>
+                  <Wrench className="size-4" />
+                  Abrir ordem de serviço
+                </Link>
+              </Button>
+            }
+          >
+            {ordens.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum conserto registrado {v.no} {v.nomeMinusculo(apto.identificacao)}.</p>
+            ) : (
+              <ul className="grid gap-2 sm:grid-cols-2">
+                {ordens.map((os) => (
+                  <li key={os.id}>
+                    <CartaoOrdem os={os} v={v} hoje={hojeISO()} mostrarOnde={false} />
                   </li>
                 ))}
               </ul>

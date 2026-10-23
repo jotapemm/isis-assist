@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { nomeAndar, STATUS, type StatusApartamento } from "../status";
 
@@ -9,7 +10,17 @@ export type JanelaApto = {
   status: StatusApartamento;
   /** Nome de quem mora (contrato ativo); a janela mostra o primeiro nome. */
   inquilino?: string | null;
+  /** Tem ordem de serviço em aberto: ganha o selo 🔧 (mesmo Ocupado, quando o status não muda). */
+  consertando?: boolean;
 };
+
+/** O selo do conserto em aberto, no canto da janela ou da casinha. */
+export function SeloConserto({ apto }: { apto: JanelaApto }) {
+  if (!apto.consertando || apto.status === "MANUTENCAO") return null;
+  return <Wrench className="size-3.5 shrink-0 text-manutencao" aria-hidden="true" />;
+}
+
+export const rotuloConserto = (apto: JanelaApto) => (apto.consertando && apto.status !== "MANUTENCAO" ? ", com conserto em aberto" : "");
 
 /** Agrupa por andar, de cima para baixo — como se olha para o prédio. "Sem andar" fica por último. */
 function andaresDeCimaParaBaixo(aptos: JanelaApto[]) {
@@ -84,7 +95,7 @@ function Janela({ apto, apagada }: { apto: JanelaApto; apagada: boolean }) {
   return (
     <Link
       href={`/apartamentos/${apto.id}`}
-      aria-label={`Apartamento ${apto.identificacao}, ${info.rotulo}${apto.inquilino ? `, ${apto.inquilino}` : ""}`}
+      aria-label={`Apartamento ${apto.identificacao}, ${info.rotulo}${apto.inquilino ? `, ${apto.inquilino}` : ""}${rotuloConserto(apto)}`}
       className={cn(
         "flex h-full min-h-16 min-w-0 flex-col justify-between gap-1 rounded-lg border-2 px-2 py-1.5 transition-[opacity,box-shadow] outline-none hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/60 sm:min-h-20 sm:px-2.5 sm:py-2",
         info.fundo,
@@ -92,8 +103,11 @@ function Janela({ apto, apagada }: { apto: JanelaApto; apagada: boolean }) {
         apagada && "opacity-25",
       )}
     >
-      <span className="truncate font-mono text-base leading-none font-bold tracking-tight tabular-nums sm:text-lg" title={apto.identificacao}>
-        {apto.identificacao}
+      <span className="flex items-start justify-between gap-1">
+        <span className="truncate font-mono text-base leading-none font-bold tracking-tight tabular-nums sm:text-lg" title={apto.identificacao}>
+          {apto.identificacao}
+        </span>
+        <SeloConserto apto={apto} />
       </span>
       <span className={cn("flex min-w-0 items-center gap-1 text-xs font-semibold", info.texto)}>
         <Icone className="size-3.5 shrink-0" aria-hidden="true" />

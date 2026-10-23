@@ -2,7 +2,7 @@
 
 > Arquitetura e roteiro de implementação. Versão 1 — aprovado em 21/10/2026.
 
-**Andamento:** Fase 0 concluída (21/10/2026). Fases 1, 2 e 3 concluídas (22/10/2026). Próxima: Fase 4 — Manutenções.
+**Andamento:** Fase 0 concluída (21/10/2026). Fases 1, 2 e 3 concluídas (22/10/2026). Deploy de demonstração, LGPD e Fase 4 concluídos (23/10/2026). Próxima: Fase 5 — Lembretes.
 
 Sistema web (PWA) de gestão de aluguéis residenciais para substituir as planilhas da proprietária.
 Prioridades, nesta ordem: **simples para quem não é técnica**, **ótimo no celular**, **bonito**.

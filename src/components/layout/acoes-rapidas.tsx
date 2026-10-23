@@ -19,7 +19,7 @@ const ACOES: Acao[] = [
   { href: "/financeiro", rotulo: "Registrar pagamento", detalhe: "Um inquilino pagou", icone: HandCoins },
   { href: "/contratos/novo", rotulo: "Novo contrato", detalhe: "Alugar um imóvel", icone: FileSignature },
   { href: "/financeiro?aba=despesas&nova=1", rotulo: "Lançar despesa", detalhe: "Conta de luz, IPTU, conserto…", icone: ReceiptText },
-  { href: "/manutencoes", rotulo: "Abrir ordem de serviço", detalhe: "Algo precisa de conserto", icone: Wrench },
+  { href: "/manutencoes/nova", rotulo: "Abrir ordem de serviço", detalhe: "Algo precisa de conserto", icone: Wrench },
   { href: "/inquilinos/novo", rotulo: "Cadastrar inquilino", detalhe: "Nome, contatos e documentos", icone: UserPlus },
   { href: "/lembretes", rotulo: "Novo lembrete", detalhe: "Para não esquecer", icone: BellPlus },
 ];

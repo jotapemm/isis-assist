@@ -61,6 +61,7 @@ export function useEnvioArquivos(destino: DestinoArquivo) {
       corpo.set("arquivo", arquivo);
       corpo.set("categoria", destino.categoria);
       if (destino.categoria === "FOTO_APTO") corpo.set("apartamentoId", destino.apartamentoId);
+      else if (destino.categoria === "FOTO_OS") corpo.set("ordemServicoId", destino.ordemServicoId);
       else if (destino.categoria === "DOCUMENTO") corpo.set("inquilinoId", destino.inquilinoId);
       else if (destino.categoria === "CONTRATO_PDF") corpo.set("contratoId", destino.contratoId);
       else if ("pagamentoId" in destino) corpo.set("pagamentoId", destino.pagamentoId);
