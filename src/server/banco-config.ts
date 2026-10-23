@@ -8,7 +8,8 @@ import type { PoolConfig } from "pg";
  * verificação completa: com ele na URL, a conexão falharia. Por isso a URL vai como o Supabase
  * mostra (sem sslmode) e aqui liga o TLS sem conferir a cadeia. Com sslmode na URL, vale a URL.
  *
- * Poucas conexões por instância: o pooler do Supabase (modo sessão) tem um teto baixo no plano grátis.
+ * Poucas conexões por instância, fechadas logo que ficam paradas (5 s): o pooler do Supabase tem teto
+ * baixo no plano grátis e derruba conexão ociosa — melhor o pool largar antes (ver db.ts).
  */
 export function configDoBanco(url = process.env.DATABASE_URL): PoolConfig {
   if (!url) return { connectionString: url };
@@ -17,6 +18,8 @@ export function configDoBanco(url = process.env.DATABASE_URL): PoolConfig {
   return {
     connectionString: url,
     max: 5,
+    idleTimeoutMillis: 5_000,
+    connectionTimeoutMillis: 10_000,
     ...(searchParams.has("sslmode") ? {} : { ssl: { rejectUnauthorized: false } }),
   };
 }
