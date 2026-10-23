@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
 import { AvisoErro, CampoSenha, CampoTexto } from "@/components/campos/campos";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
 import { authClient, mensagemDeErro } from "@/lib/auth-client";
+import { CaixaAceite } from "@/modulos/legal/componentes/caixa-aceite";
+import { VERSAO_TERMOS } from "@/modulos/legal/versao";
 import { esquemaCriarConta } from "../esquemas";
 
 export function FormCriarConta() {
@@ -17,12 +19,17 @@ export function FormCriarConta() {
   const [erro, setErro] = useState<string | null>(null);
   const form = useForm<z.infer<typeof esquemaCriarConta>>({
     resolver: zodResolver(esquemaCriarConta),
-    defaultValues: { nome: "", email: "", senha: "" },
+    defaultValues: { nome: "", email: "", senha: "", aceite: false },
   });
 
   async function criar(dados: z.infer<typeof esquemaCriarConta>) {
     setErro(null);
-    const { error } = await authClient.signUp.email({ name: dados.nome, email: dados.email, password: dados.senha });
+    const { error } = await authClient.signUp.email({
+      name: dados.nome,
+      email: dados.email,
+      password: dados.senha,
+      termosVersao: VERSAO_TERMOS,
+    });
     if (error) {
       setErro(mensagemDeErro(error));
       return;
@@ -49,6 +56,11 @@ export function FormCriarConta() {
           rotulo="Senha"
           descricao="Pelo menos 8 caracteres."
           autoComplete="new-password"
+        />
+        <Controller
+          control={form.control}
+          name="aceite"
+          render={({ field, fieldState }) => <CaixaAceite marcado={field.value} aoMudar={field.onChange} erro={fieldState.error?.message} />}
         />
         <AvisoErro mensagem={erro} />
         <Button type="submit" size="lg" className="w-full" disabled={form.formState.isSubmitting}>

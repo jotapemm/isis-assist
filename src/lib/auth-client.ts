@@ -1,7 +1,10 @@
 import { createAuthClient } from "better-auth/react";
-import { organizationClient } from "better-auth/client/plugins";
+import { inferAdditionalFields, organizationClient } from "better-auth/client/plugins";
 
-export const authClient = createAuthClient({ plugins: [organizationClient()] });
+// O aceite dos termos vai no cadastro (o servidor recusa sem ele: src/server/auth.ts).
+export const authClient = createAuthClient({
+  plugins: [organizationClient(), inferAdditionalFields({ user: { termosVersao: { type: "string", required: false } } })],
+});
 
 // O Better Auth responde com códigos em inglês; aqui viram frases que a usuária entende.
 const MENSAGENS: Record<string, string> = {
@@ -14,6 +17,7 @@ const MENSAGENS: Record<string, string> = {
   INVALID_TOKEN: "Este link expirou ou já foi usado. Peça um novo.",
   INVALID_PASSWORD: "Senha atual incorreta.",
   TOO_MANY_REQUESTS: "Muitas tentativas seguidas. Espere um minuto e tente de novo.",
+  TERMOS_NAO_ACEITOS: "Para criar a conta, aceite os Termos de Uso e a Política de Privacidade.",
 };
 
 export function mensagemDeErro(erro: { code?: string; status?: number } | null | undefined) {

@@ -109,7 +109,7 @@ async function Conteudo({ params }: { params: PageProps<"/contratos/[id]">["para
           />
         </Bloco>
 
-        <Bloco titulo="Pessoas" acoes={<BotaoWhatsApp telefone={c.inquilino.telefone} nome={c.inquilino.nome} compacto />}>
+        <Bloco titulo="Pessoas" acoes={<BotaoWhatsApp telefone={c.inquilino.telefone} nome={c.inquilino.nome} aceita={c.inquilino.aceitaWhatsapp} compacto />}>
           <Dados
             itens={[
               ["Inquilino", <Link key="i" href={`/inquilinos/${c.inquilino.id}`} className="underline-offset-4 hover:underline">{c.inquilino.nome}</Link>],

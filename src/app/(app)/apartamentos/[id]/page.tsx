@@ -70,7 +70,7 @@ async function Conteudo({ params }: { params: PageProps<"/apartamentos/[id]">["p
         <TabsContent value="resumo" className="grid gap-4 lg:grid-cols-2">
           <Bloco
             titulo="Inquilino atual"
-            acoes={contratoAtivo && <BotaoWhatsApp telefone={contratoAtivo.inquilino.telefone} nome={contratoAtivo.inquilino.nome} compacto />}
+            acoes={contratoAtivo && <BotaoWhatsApp telefone={contratoAtivo.inquilino.telefone} nome={contratoAtivo.inquilino.nome} aceita={contratoAtivo.inquilino.aceitaWhatsapp} compacto />}
           >
             {contratoAtivo ? (
               <div className="flex flex-col gap-3">

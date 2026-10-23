@@ -55,8 +55,22 @@ export function BotaoVerRecibo({ pagamentoId }: { pagamentoId: string }) {
   );
 }
 
-/** Abre o WhatsApp da usuária com a mensagem pronta (custo zero; a cobrança automática é do v2). */
-export function BotaoMensagem({ telefone, mensagem, rotulo }: { telefone: string | null; mensagem: string; rotulo: string }) {
+/**
+ * Abre o WhatsApp da usuária com a mensagem pronta (custo zero; a cobrança automática é do v2).
+ * Sem o aceite do inquilino (LGPD), avisa em vez de oferecer o botão.
+ */
+export function BotaoMensagem({
+  telefone,
+  aceita,
+  mensagem,
+  rotulo,
+}: {
+  telefone: string | null;
+  aceita: boolean;
+  mensagem: string;
+  rotulo: string;
+}) {
+  if (!aceita) return telefone ? <p className="self-center text-sm text-muted-foreground">Não aceita avisos pelo WhatsApp.</p> : null;
   const link = telefone && linkWhatsApp(telefone, mensagem);
   if (!link) return null;
   return (

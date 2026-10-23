@@ -113,3 +113,12 @@ export function armazenamento(): Armazenamento {
   }
   return instancia;
 }
+
+/**
+ * Apaga vários objetos depois que o banco já não aponta para eles (apagar dados, excluir conta).
+ * Uma falha aqui só deixa um arquivo órfão no armazenamento: registra no log e segue.
+ */
+export async function apagarDoArmazenamento(chaves: string[]) {
+  const resultados = await Promise.allSettled(chaves.map((chave) => armazenamento().apagar(chave)));
+  for (const r of resultados) if (r.status === "rejected") console.error("Arquivo não apagado do armazenamento:", r.reason);
+}

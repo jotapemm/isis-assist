@@ -2,10 +2,20 @@ import "server-only";
 import type { Contexto } from "@/server/contexto";
 import { db } from "@/server/db";
 
-export async function listarInquilinos(ctx: Contexto) {
+/** Os atuais, ou os arquivados (ex-inquilinos), onde a proprietária atende pedidos de LGPD de quem já saiu. */
+export async function listarInquilinos(ctx: Contexto, { arquivados = false } = {}) {
   const inquilinos = await db.inquilino.findMany({
-    where: { organizationId: ctx.organizacaoId, arquivadoEm: null },
-    select: { id: true, nome: true, cpf: true, telefone: true, email: true, _count: { select: { fiadores: true } } },
+    where: { organizationId: ctx.organizacaoId, arquivadoEm: arquivados ? { not: null } : null },
+    select: {
+      id: true,
+      nome: true,
+      cpf: true,
+      telefone: true,
+      email: true,
+      aceitaWhatsapp: true,
+      dadosApagadosEm: true,
+      _count: { select: { fiadores: true } },
+    },
   });
   return inquilinos
     .map(({ _count, ...i }) => ({ ...i, temFiador: _count.fiadores > 0 }))
@@ -14,9 +24,14 @@ export async function listarInquilinos(ctx: Contexto) {
 
 export type InquilinoResumo = Awaited<ReturnType<typeof listarInquilinos>>[number];
 
+export async function contarArquivados(ctx: Contexto) {
+  return db.inquilino.count({ where: { organizationId: ctx.organizacaoId, arquivadoEm: { not: null } } });
+}
+
 export async function obterInquilino(ctx: Contexto, id: string) {
   return db.inquilino.findFirst({
-    where: { id, organizationId: ctx.organizacaoId, arquivadoEm: null },
+    // Arquivados também abrem: é por aqui que se atende o pedido de LGPD de quem já saiu.
+    where: { id, organizationId: ctx.organizacaoId },
     include: {
       fiadores: { orderBy: { createdAt: "asc" }, take: 1 },
       contratos: {

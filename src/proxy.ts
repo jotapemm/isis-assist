@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
-// Telas abertas para quem não entrou.
-const PUBLICAS = ["/entrar", "/criar-conta", "/esqueci-a-senha", "/redefinir-senha"];
+// Telas abertas para quem não entrou (Termos e Privacidade: lidos antes de criar a conta).
+const PUBLICAS = ["/entrar", "/criar-conta", "/esqueci-a-senha", "/redefinir-senha", "/termos", "/privacidade"];
 
 /**
  * Checagem otimista: só olha se existe o cookie de sessão, sem ir ao banco.

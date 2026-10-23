@@ -58,7 +58,7 @@ export const INQUILINO_VAZIO: DadosInquilino = {
   contatoEmergenciaNome: "",
   contatoEmergenciaTelefone: "",
   contatoEmergenciaParentesco: "",
-  aceitaWhatsapp: true,
+  aceitaWhatsapp: false, // consentimento (LGPD) começa desmarcado: só marca se o inquilino disser sim
   observacoes: "",
   temFiador: false,
   fiador: { nome: "", cpf: "", telefone: "", email: "", endereco: "" },

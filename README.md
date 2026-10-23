@@ -31,6 +31,11 @@ que um desligamento deixa para trás (sem isso o banco subia vazio). Se ainda as
 
 **Publicar (Vercel + Supabase):** passo a passo em [docs/DEPLOY.md](docs/DEPLOY.md).
 
+**LGPD:** cadastro com aceite dos Termos e da Política de Privacidade (`/termos`, `/privacidade`); cada inquilino
+tem "Baixar os dados" (JSON) e "Apagar dados pessoais" no menu ⋯ (nome e CPF ficam até o fim do prazo do imposto
+de renda e a rotina diária apaga depois — [src/modulos/inquilinos/privacidade.ts](src/modulos/inquilinos/privacidade.ts));
+"Excluir minha conta" em Configurações; botões de WhatsApp só para quem aceitou.
+
 **Financeiro:** as cobranças do mês aparecem sozinhas para os contratos ativos (ao abrir as telas ou pela rotina
 diária `GET /api/cron/diario`, protegida pelo `CRON_SECRET`). Recibos em PDF saem em `/api/recibos/<pagamento>`.
 

@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { VERSAO_TERMOS } from "@/modulos/legal/versao";
 import { auth } from "./auth";
 import { db } from "./db";
 
@@ -47,8 +48,13 @@ export const obterContexto = cache(async (): Promise<Contexto | null> => {
   };
 });
 
-/** Para páginas e server actions: sem sessão vai para /entrar; sem residencial, para /boas-vindas. */
+/**
+ * Para páginas e server actions: sem sessão vai para /entrar; sem o aceite da versão atual dos Termos
+ * e da Política, para /aceitar-termos; sem residencial, para /boas-vindas.
+ */
 export async function exigirContexto(): Promise<Contexto> {
+  const sessao = await obterSessao();
+  if (sessao && sessao.user.termosVersao !== VERSAO_TERMOS) redirect("/aceitar-termos");
   const ctx = await obterContexto();
   if (ctx) return ctx;
   await exigirSessao();

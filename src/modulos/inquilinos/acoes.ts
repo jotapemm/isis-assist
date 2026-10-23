@@ -8,6 +8,7 @@ import { falha, falhaDeValidacao, sucesso, type Resultado } from "@/lib/resultad
 import { type Contexto, exigirContexto } from "@/server/contexto";
 import { db } from "@/server/db";
 import { type DadosInquilino, esquemaInquilino } from "./esquemas";
+import { apagarDadosPessoais } from "./privacidade";
 
 const ouNulo = (v: string) => v.trim() || null;
 const digitosOuNulo = (v: string) => somenteDigitos(v) || null;
@@ -118,7 +119,17 @@ export async function arquivarInquilino(id: string): Promise<Resultado> {
 
 export async function desarquivarInquilino(id: string): Promise<Resultado> {
   const ctx = await exigirContexto();
-  await db.inquilino.updateMany({ where: { id, organizationId: ctx.organizacaoId }, data: { arquivadoEm: null } });
+  // Quem teve os dados apagados não volta: o cadastro ficou vazio de propósito.
+  await db.inquilino.updateMany({ where: { id, organizationId: ctx.organizacaoId, dadosApagadosEm: null }, data: { arquivadoEm: null } });
   refresh();
   return sucesso();
+}
+
+/** LGPD: apaga os dados pessoais a pedido do titular (as regras estão em privacidade.ts). */
+export async function apagarDadosDoInquilino(id: string): Promise<Resultado<{ guardarAte: string | null }>> {
+  const ctx = await exigirContexto();
+  const r = await apagarDadosPessoais(ctx, id);
+  if (!r.ok) return falha(r.erro);
+  refresh();
+  return sucesso({ guardarAte: r.guardarAte });
 }

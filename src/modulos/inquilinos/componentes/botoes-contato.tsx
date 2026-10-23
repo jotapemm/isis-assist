@@ -3,19 +3,24 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { linkTelefone, linkWhatsApp } from "@/lib/whatsapp";
 
-/** Abre a conversa no WhatsApp da própria usuária, já com um "Olá, Fulano!". */
+/**
+ * Abre a conversa no WhatsApp da própria usuária, já com um "Olá, Fulano!". Só aparece se o inquilino
+ * aceitou ser chamado por lá (LGPD) — sem aceite, sobra o "Ligar".
+ */
 export function BotaoWhatsApp({
   telefone,
   nome,
+  aceita,
   compacto = false,
   className,
 }: {
   telefone: string | null;
   nome: string;
+  aceita: boolean;
   compacto?: boolean;
   className?: string;
 }) {
-  const link = telefone && linkWhatsApp(telefone, `Olá, ${nome.split(" ")[0]}!`);
+  const link = aceita && telefone && linkWhatsApp(telefone, `Olá, ${nome.split(" ")[0]}!`);
   if (!link) return null;
   return (
     <Button

@@ -76,7 +76,7 @@ export async function obterApartamento(ctx: Contexto, id: string) {
           encerradoEm: true,
           valorAluguel: true,
           diaVencimento: true,
-          inquilino: { select: { id: true, nome: true, telefone: true } },
+          inquilino: { select: { id: true, nome: true, telefone: true, aceitaWhatsapp: true } },
         },
       },
       historicoStatus: {

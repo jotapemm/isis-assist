@@ -70,7 +70,7 @@ export async function obterContrato(ctx: Contexto, id: string) {
     include: {
       apartamento: { select: { id: true, identificacao: true, andar: true, status: true } },
       inquilino: {
-        select: { id: true, nome: true, telefone: true, email: true, cpf: true, fiadores: { select: { id: true, nome: true } } },
+        select: { id: true, nome: true, telefone: true, email: true, cpf: true, aceitaWhatsapp: true, fiadores: { select: { id: true, nome: true } } },
       },
       fiador: { select: { id: true, nome: true, telefone: true } },
       reajustes: {

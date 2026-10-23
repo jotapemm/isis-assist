@@ -16,6 +16,7 @@ import { configDoBanco } from "../../src/server/banco-config";
 import { fimDoContrato, somarDias, somarMeses } from "../../src/lib/datas";
 import { hojeISO, isoDeDataCalendario, paraDataCalendario } from "../../src/lib/formatar";
 import { calcularEncargos, competenciaDe, vencimentoNoMes } from "../../src/modulos/financeiro/regras";
+import { VERSAO_TERMOS } from "../../src/modulos/legal/versao";
 import {
   APARTAMENTOS,
   celularFicticio,
@@ -52,7 +53,7 @@ async function main() {
 
   await db.$transaction([
     db.user.create({
-      data: { id: userId, name: "Maria Aparecida Souza", email: EMAIL, emailVerified: true },
+      data: { id: userId, name: "Maria Aparecida Souza", email: EMAIL, emailVerified: true, termosVersao: VERSAO_TERMOS, termosAceitosEm: agora },
     }),
     // É assim que o Better Auth guarda login por e-mail e senha: uma "account" do provedor "credential".
     db.account.create({
@@ -165,6 +166,8 @@ async function semearInquilinos(organizationId: string) {
         contatoEmergenciaNome: emergenciaNome,
         contatoEmergenciaTelefone: celularFicticio(),
         contatoEmergenciaParentesco: parentesco,
+        // Quase todos aceitaram avisos pelo WhatsApp; a Beatriz não, para a demonstração mostrar o "não".
+        aceitaWhatsapp: !("semWhatsapp" in inq),
         fiadores:
           "fiador" in inq
             ? { create: { organizationId, nome: inq.fiador, cpf: cpfFicticio(), telefone: celularFicticio() } }

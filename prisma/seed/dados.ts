@@ -59,7 +59,7 @@ export const INQUILINOS = [
   { nome: "Rafael Oliveira Santos", profissao: "Motorista de aplicativo", renda: 4200_00, nascimento: "1986-11-15", emergencia: ["Cláudia Santos", "Irmã"] },
   { nome: "Fernanda Costa Ribeiro", profissao: "Contadora", renda: 7300_00, nascimento: "1990-06-08", emergencia: ["Antônio Ribeiro", "Pai"] },
   { nome: "Thiago Almeida Pereira", profissao: "Técnico em eletrônica", renda: 3900_00, nascimento: "1997-02-19", emergencia: ["Sandra Almeida", "Mãe"], fiador: "Roberto Pereira" },
-  { nome: "Beatriz Souza Carvalho", profissao: "Estudante de medicina", renda: 3800_00, nascimento: "2001-08-30", emergencia: ["Márcia Souza", "Mãe"], fiador: "Paulo Carvalho" },
+  { nome: "Beatriz Souza Carvalho", profissao: "Estudante de medicina", renda: 3800_00, nascimento: "2001-08-30", emergencia: ["Márcia Souza", "Mãe"], fiador: "Paulo Carvalho", semWhatsapp: true },
   { nome: "Lucas Gabriel Nunes", profissao: "Vendedor", renda: 4100_00, nascimento: "1995-12-04", emergencia: ["Débora Nunes", "Esposa"] },
   { nome: "Patrícia Gomes Barbosa", profissao: "Cabeleireira", renda: 5100_00, nascimento: "1983-03-22", emergencia: ["Felipe Barbosa", "Filho"] },
   { nome: "Marcos Vinícius Teixeira", profissao: "Engenheiro civil", renda: 8800_00, nascimento: "1985-07-17", emergencia: ["Luciana Teixeira", "Esposa"] },

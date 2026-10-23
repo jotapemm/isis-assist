@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { ChevronRight, FileSignature, Pencil } from "lucide-react";
+import { Archive, ChevronRight, FileSignature, Pencil, ShieldCheck } from "lucide-react";
 import { Bloco, Dados, VoltarPara } from "@/components/comum/blocos";
 import { EsqueletoBloco } from "@/components/comum/esqueleto";
 import { Avatar } from "@/components/layout/menu-usuario";
@@ -37,6 +37,9 @@ async function Conteudo({ params }: { params: PageProps<"/inquilinos/[id]">["par
   if (!inq) notFound();
 
   const fiador = inq.fiadores[0];
+  const arquivado = inq.arquivadoEm !== null;
+  const apagado = inq.dadosApagadosEm !== null;
+  const morandoAgora = inq.contratos.some((c) => c.status === "ATIVO");
   return (
     <>
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -48,17 +51,34 @@ async function Conteudo({ params }: { params: PageProps<"/inquilinos/[id]">["par
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <BotaoWhatsApp telefone={inq.telefone} nome={inq.nome} />
+          <BotaoWhatsApp telefone={inq.telefone} nome={inq.nome} aceita={inq.aceitaWhatsapp} />
           <BotaoLigar telefone={inq.telefone} nome={inq.nome} />
-          <Button asChild variant="outline">
-            <Link href={`/inquilinos/${inq.id}/editar`}>
-              <Pencil className="size-4" />
-              Editar
-            </Link>
-          </Button>
-          <AcoesInquilino id={inq.id} nome={inq.nome} />
+          {!arquivado && (
+            <Button asChild variant="outline">
+              <Link href={`/inquilinos/${inq.id}/editar`}>
+                <Pencil className="size-4" />
+                Editar
+              </Link>
+            </Button>
+          )}
+          <AcoesInquilino id={inq.id} nome={inq.nome} arquivado={arquivado} apagado={apagado} morandoAgora={morandoAgora} />
         </div>
       </header>
+
+      {apagado ? (
+        <Aviso icone={ShieldCheck}>
+          Dados pessoais apagados em {formatarData(inq.dadosApagadosEm!)}, a pedido (LGPD).
+          {inq.guardarNomeAte &&
+            ` Nome e CPF ficam até ${formatarData(inq.guardarNomeAte)} por causa dos recibos e do imposto de renda; depois saem sozinhos.`}
+        </Aviso>
+      ) : (
+        arquivado && (
+          <Aviso icone={Archive}>
+            Arquivado em {formatarData(inq.arquivadoEm!)}: não aparece na lista de inquilinos. Os dados continuam guardados; pelo
+            menu dá para trazer de volta, baixar os dados ou apagá-los.
+          </Aviso>
+        )
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Bloco titulo="Dados e contato">
@@ -78,12 +98,14 @@ async function Conteudo({ params }: { params: PageProps<"/inquilinos/[id]">["par
         <Bloco
           titulo="Contratos"
           acoes={
-            <Button asChild variant="ghost" size="sm">
-              <Link href={`/contratos/novo?inquilino=${inq.id}`}>
-                <FileSignature className="size-4" />
-                Novo contrato
-              </Link>
-            </Button>
+            !arquivado && (
+              <Button asChild variant="ghost" size="sm">
+                <Link href={`/contratos/novo?inquilino=${inq.id}`}>
+                  <FileSignature className="size-4" />
+                  Novo contrato
+                </Link>
+              </Button>
+            )
           }
         >
           {inq.contratos.length === 0 ? (
@@ -136,13 +158,15 @@ async function Conteudo({ params }: { params: PageProps<"/inquilinos/[id]">["par
           )}
         </Bloco>
 
-        <Bloco titulo="Documentos" className="lg:col-span-2">
-          <ListaDocumentos
-            destino={{ categoria: "DOCUMENTO", inquilinoId: inq.id }}
-            documentos={inq.arquivos}
-            vazio="Nenhum documento ainda. Dá para tirar foto do RG ou anexar um PDF."
-          />
-        </Bloco>
+        {!apagado && (
+          <Bloco titulo="Documentos" className="lg:col-span-2">
+            <ListaDocumentos
+              destino={{ categoria: "DOCUMENTO", inquilinoId: inq.id }}
+              documentos={inq.arquivos}
+              vazio="Nenhum documento ainda. Dá para tirar foto do RG ou anexar um PDF."
+            />
+          </Bloco>
+        )}
 
         {inq.observacoes && (
           <Bloco titulo="Observações" className="lg:col-span-2">
@@ -151,5 +175,14 @@ async function Conteudo({ params }: { params: PageProps<"/inquilinos/[id]">["par
         )}
       </div>
     </>
+  );
+}
+
+function Aviso({ icone: Icone, children }: { icone: typeof Archive; children: React.ReactNode }) {
+  return (
+    <p className="mb-4 flex items-start gap-3 rounded-2xl border bg-muted/60 p-4 text-sm">
+      <Icone className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <span>{children}</span>
+    </p>
   );
 }

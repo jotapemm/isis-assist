@@ -55,13 +55,15 @@ export function ListaInquilinos({ inquilinos }: { inquilinos: InquilinoResumo[] 
                 <span className="flex min-w-0 flex-col">
                   <span className="truncate font-medium">{i.nome}</span>
                   <span className="truncate text-sm text-muted-foreground tabular-nums">
-                    {[i.telefone && mascararTelefone(i.telefone), i.cpf && `CPF ${mascararCPF(i.cpf)}`].filter(Boolean).join(" · ") ||
-                      "Sem telefone nem CPF"}
+                    {i.dadosApagadosEm
+                      ? "Dados pessoais apagados (LGPD)"
+                      : [i.telefone && mascararTelefone(i.telefone), i.cpf && `CPF ${mascararCPF(i.cpf)}`].filter(Boolean).join(" · ") ||
+                        "Sem telefone nem CPF"}
                   </span>
                 </span>
                 <ChevronRight className="ml-auto size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
               </Link>
-              <BotaoWhatsApp telefone={i.telefone} nome={i.nome} compacto />
+              <BotaoWhatsApp telefone={i.telefone} nome={i.nome} aceita={i.aceitaWhatsapp} compacto />
             </li>
           ))}
         </ul>

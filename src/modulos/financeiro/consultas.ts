@@ -34,7 +34,7 @@ const selecaoCobranca = {
       multaPercentual: true,
       jurosMensalPercentual: true,
       apartamento: { select: { id: true, identificacao: true } },
-      inquilino: { select: { id: true, nome: true, telefone: true } },
+      inquilino: { select: { id: true, nome: true, telefone: true, aceitaWhatsapp: true } },
     },
   },
   pagamentos: {

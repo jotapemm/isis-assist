@@ -3,12 +3,18 @@ import "server-only";
 type Email = { para: string; assunto: string; html: string; texto: string };
 
 /**
- * Envia um e-mail transacional. Sem RESEND_API_KEY (desenvolvimento), só escreve no terminal —
- * assim dá para testar "esqueci a senha" copiando o link do log.
+ * Envia um e-mail transacional. Sem RESEND_API_KEY: em desenvolvimento escreve no terminal (dá para
+ * testar "esqueci a senha" copiando o link); em produção não envia nem mostra o conteúdo.
  */
 export async function enviarEmail({ para, assunto, html, texto }: Email) {
   const chave = process.env.RESEND_API_KEY;
   if (!chave) {
+    // Em produção o texto NÃO vai para o log: o link de "esqueci a senha" é uma credencial, e o log
+    // da hospedagem fica guardado e visível para mais gente.
+    if (process.env.NODE_ENV === "production") {
+      console.warn(`[e-mail] não enviado (falta RESEND_API_KEY): "${assunto}".`);
+      return;
+    }
     console.info(`\n[e-mail] para ${para} — ${assunto}\n${texto}\n`);
     return;
   }

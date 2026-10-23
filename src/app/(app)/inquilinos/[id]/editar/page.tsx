@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { VoltarPara } from "@/components/comum/blocos";
 import { EsqueletoBloco } from "@/components/comum/esqueleto";
 import { formatarCpfCnpjOuVazio, formatarTelefoneOuVazio } from "@/modulos/conta/formatos";
@@ -24,6 +24,8 @@ async function Conteudo({ params }: { params: PageProps<"/inquilinos/[id]/editar
   const ctx = await exigirContexto();
   const inq = await obterInquilino(ctx, id);
   if (!inq) notFound();
+  // Arquivado (ou com os dados apagados) não se edita: primeiro volta para a lista.
+  if (inq.arquivadoEm) redirect(`/inquilinos/${inq.id}`);
 
   const fiador = inq.fiadores[0];
   return (

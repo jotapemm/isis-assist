@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Fachada } from "@/components/comum/fachada";
 import { Logotipo } from "@/components/marca";
 
@@ -20,6 +21,15 @@ export default function LayoutPublico({ children }: { children: React.ReactNode 
         <div className="mx-auto w-full max-w-sm">
           <Logotipo className="mb-10 lg:hidden" />
           {children}
+          <p className="mt-10 text-center text-xs text-muted-foreground">
+            <Link href="/termos" className="underline-offset-4 hover:underline">
+              Termos de Uso
+            </Link>{" "}
+            ·{" "}
+            <Link href="/privacidade" className="underline-offset-4 hover:underline">
+              Política de Privacidade
+            </Link>
+          </p>
         </div>
       </main>
     </div>

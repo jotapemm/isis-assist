@@ -10,6 +10,7 @@ import {
   FormLocador,
   FormTrocarSenha,
 } from "@/modulos/conta/componentes/formularios-configuracoes";
+import { PrivacidadeDaConta } from "@/modulos/conta/componentes/privacidade-conta";
 import { Secao } from "@/modulos/conta/componentes/secao";
 import { exigirContexto } from "@/server/contexto";
 
@@ -26,6 +27,7 @@ export default function PaginaConfiguracoes() {
         <SeletorTema comRotulos />
       </Secao>
       <FormTrocarSenha />
+      <PrivacidadeDaConta />
     </>
   );
 }

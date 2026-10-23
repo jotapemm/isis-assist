@@ -12,6 +12,7 @@ export const esquemaCriarConta = z.object({
   nome: z.string().trim().min(2, "Digite seu nome.").max(120, "Nome longo demais."),
   email,
   senha: senhaNova,
+  aceite: z.boolean().refine((v) => v, "Para criar a conta, aceite os Termos de Uso e a Política de Privacidade."),
 });
 
 export const esquemaEsqueciSenha = z.object({ email });

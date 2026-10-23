@@ -76,7 +76,7 @@ function Conteudo({ cobranca: c, tipo, chavePix, hoje }: Omit<Props, "aoFechar" 
         {registrado && (
           <PagamentoRegistrado
             {...registrado}
-            telefone={c.inquilino.telefone}
+            whatsapp={c.inquilino.aceitaWhatsapp ? c.inquilino.telefone : null}
             mensagem={mensagemRecibo({
               nomeInquilino: c.inquilino.nome,
               doImovel,
@@ -93,6 +93,7 @@ function Conteudo({ cobranca: c, tipo, chavePix, hoje }: Omit<Props, "aoFechar" 
             <FormPagamento cobranca={c} hoje={hoje} aoRegistrar={setRegistrado} />
             <BotaoMensagem
               telefone={c.inquilino.telefone}
+              aceita={c.inquilino.aceitaWhatsapp}
               rotulo={c.situacao === "ATRASADA" ? "Cobrar no WhatsApp" : "Lembrar no WhatsApp"}
               mensagem={mensagemCobranca(
                 { nomeInquilino: c.inquilino.nome, doImovel, competencia: c.competencia, vencimento: c.vencimento, valor: c.aberto, chavePix },
@@ -110,7 +111,7 @@ function Conteudo({ cobranca: c, tipo, chavePix, hoje }: Omit<Props, "aoFechar" 
                 <LinhaPagamento
                   key={p.id}
                   pagamento={p}
-                  telefone={c.inquilino.telefone}
+                  whatsapp={c.inquilino.aceitaWhatsapp ? c.inquilino.telefone : null}
                   mensagem={mensagemRecibo({
                     nomeInquilino: c.inquilino.nome,
                     doImovel,
@@ -224,12 +225,13 @@ function FormPagamento({
 function PagamentoRegistrado({
   pagamentoId,
   numeroRecibo,
-  telefone,
+  whatsapp,
   mensagem,
 }: {
   pagamentoId: string;
   numeroRecibo: number;
-  telefone: string | null;
+  /** Telefone, só se o inquilino aceitou avisos pelo WhatsApp. */
+  whatsapp: string | null;
   mensagem: string;
 }) {
   const { enviar, enviando } = useEnvioArquivos({ categoria: "COMPROVANTE", pagamentoId });
@@ -241,7 +243,7 @@ function PagamentoRegistrado({
       </p>
       <div className="flex flex-wrap gap-2">
         <BotaoCompartilharRecibo pagamentoId={pagamentoId} numero={numeroRecibo} />
-        <BotaoMensagem telefone={telefone} mensagem={mensagem} rotulo="Avisar no WhatsApp" />
+        <BotaoMensagem telefone={whatsapp} aceita={whatsapp !== null} mensagem={mensagem} rotulo="Avisar no WhatsApp" />
         <BotaoVerRecibo pagamentoId={pagamentoId} />
         <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-sm font-medium hover:bg-muted has-focus-visible:ring-3 has-focus-visible:ring-ring/50">
           <Paperclip className="size-4" aria-hidden="true" />
@@ -263,11 +265,11 @@ function PagamentoRegistrado({
 
 function LinhaPagamento({
   pagamento: p,
-  telefone,
+  whatsapp,
   mensagem,
 }: {
   pagamento: CobrancaLinha["pagamentos"][number];
-  telefone: string | null;
+  whatsapp: string | null;
   mensagem: string;
 }) {
   const [confirmando, setConfirmando] = useState(false);
@@ -297,7 +299,7 @@ function LinhaPagamento({
       )}
       <div className="flex flex-wrap gap-2">
         <BotaoCompartilharRecibo pagamentoId={p.id} numero={p.numeroRecibo} />
-        <BotaoMensagem telefone={telefone} mensagem={mensagem} rotulo="WhatsApp" />
+        <BotaoMensagem telefone={whatsapp} aceita={whatsapp !== null} mensagem={mensagem} rotulo="WhatsApp" />
         <BotaoVerRecibo pagamentoId={p.id} />
         {confirmando ? (
           <span className="flex items-center gap-1">
