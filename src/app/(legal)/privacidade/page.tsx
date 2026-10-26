@@ -54,8 +54,8 @@ export default function PaginaPrivacidade() {
           observações.
         </li>
         <li>
-          <strong>Contratos, financeiro e manutenções:</strong> datas, valores, reajustes, cobranças, pagamentos,
-          recibos, comprovantes, despesas, ordens de serviço e fotos dos consertos.
+          <strong>Contratos, financeiro, manutenções e lembretes:</strong> datas, valores, reajustes, cobranças,
+          pagamentos, recibos, comprovantes, despesas, ordens de serviço, fotos dos consertos, lembretes e anotações.
         </li>
         <li>
           Não pedimos dados sensíveis (saúde, religião, origem racial, biometria e afins) e não usamos cookies de propaganda

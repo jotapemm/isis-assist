@@ -17,6 +17,8 @@ import { nomeAndar } from "@/modulos/apartamentos/status";
 import { BotaoWhatsApp } from "@/modulos/inquilinos/componentes/botoes-contato";
 import { CartaoOrdem } from "@/modulos/manutencoes/componentes/pecas";
 import { ordensDoApartamento } from "@/modulos/manutencoes/consultas";
+import { LembretesDoImovel } from "@/modulos/lembretes/componentes/lembretes-do-imovel";
+import { lembretesDoApartamento } from "@/modulos/lembretes/consultas";
 import { emAberto } from "@/modulos/manutencoes/regras";
 import { exigirContexto } from "@/server/contexto";
 
@@ -35,7 +37,12 @@ export default function PaginaApartamento({ params }: PageProps<"/apartamentos/[
 async function Conteudo({ params }: { params: PageProps<"/apartamentos/[id]">["params"] }) {
   const { id } = await params;
   const ctx = await exigirContexto();
-  const [apto, v, ordens] = await Promise.all([obterApartamento(ctx, id), vocabularioDaConta(ctx), ordensDoApartamento(ctx, id)]);
+  const [apto, v, ordens, lembretes] = await Promise.all([
+    obterApartamento(ctx, id),
+    vocabularioDaConta(ctx),
+    ordensDoApartamento(ctx, id),
+    lembretesDoApartamento(ctx, id),
+  ]);
   if (!apto) notFound();
 
   const contratoAtivo = apto.contratos.find((c) => c.status === "ATIVO");
@@ -70,6 +77,12 @@ async function Conteudo({ params }: { params: PageProps<"/apartamentos/[id]">["p
           <TabsTrigger value="manutencoes">
             Manutenções
             {ordens.some((o) => emAberto(o.status)) && <Wrench className="size-3.5 text-manutencao" aria-label="com conserto em aberto" />}
+          </TabsTrigger>
+          <TabsTrigger value="lembretes">
+            Lembretes
+            {lembretes.some((l) => !l.concluidoEm) && (
+              <span className="tabular-nums text-muted-foreground">{lembretes.filter((l) => !l.concluidoEm).length}</span>
+            )}
           </TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
         </TabsList>
@@ -177,6 +190,12 @@ async function Conteudo({ params }: { params: PageProps<"/apartamentos/[id]">["p
                 ))}
               </ul>
             )}
+          </Bloco>
+        </TabsContent>
+
+        <TabsContent value="lembretes">
+          <Bloco titulo="Lembretes">
+            <LembretesDoImovel apto={{ id: apto.id, identificacao: apto.identificacao }} lembretes={lembretes} tipo={v.tipo} hoje={hojeISO()} />
           </Bloco>
         </TabsContent>
 

@@ -22,7 +22,7 @@ export default function PaginaTermos() {
       <h2>1. O serviço</h2>
       <p>
         O Isis-Assist é um sistema na internet para administrar aluguéis residenciais: imóveis, inquilinos, contratos,
-        cobranças, recibos, despesas e manutenções. Ele organiza e calcula; as decisões sobre a locação são
+        cobranças, recibos, despesas, manutenções e lembretes. Ele organiza e calcula; as decisões sobre a locação são
         sempre suas.
       </p>
 

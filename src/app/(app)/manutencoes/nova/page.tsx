@@ -22,10 +22,14 @@ export default function PaginaNovaOrdem({ searchParams }: PageProps<"/manutencoe
   );
 }
 
-/** ?apto=<id> vem do botão "Abrir ordem de serviço" na página do imóvel. */
+/** ?apto=<id> vem do botão "Abrir ordem de serviço" na página do imóvel (ou de um lembrete). */
 async function Conteudo({ busca }: { busca: PageProps<"/manutencoes/nova">["searchParams"] }) {
   const [ctx, parametros] = await Promise.all([exigirContexto(), busca]);
   const [dados, tipo] = await Promise.all([dadosParaNovaOrdem(ctx), tipoDaConta(ctx)]);
   const apto = typeof parametros.apto === "string" ? parametros.apto : undefined;
-  return <FormNovaOrdem tipo={tipo} hoje={dados.hoje} aptos={dados.aptos} prestadores={dados.prestadores} aptoInicial={apto} />;
+  // ?titulo= vem da sugestão "Abrir ordem de serviço" de um lembrete.
+  const titulo = typeof parametros.titulo === "string" ? parametros.titulo.slice(0, 120) : undefined;
+  return (
+    <FormNovaOrdem tipo={tipo} hoje={dados.hoje} aptos={dados.aptos} prestadores={dados.prestadores} aptoInicial={apto} tituloInicial={titulo} />
+  );
 }

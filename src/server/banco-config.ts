@@ -14,7 +14,9 @@ import type { PoolConfig } from "pg";
 export function configDoBanco(url = process.env.DATABASE_URL): PoolConfig {
   if (!url) return { connectionString: url };
   const { hostname, searchParams } = new URL(url);
-  if (["localhost", "127.0.0.1"].includes(hostname)) return { connectionString: url };
+  // Banco local (`prisma dev`): aguenta umas 8 conexões ao mesmo tempo e derruba a seguinte. O padrão
+  // do pg é 10, e telas que disparam muitas consultas juntas (painel, calendário) passavam do limite.
+  if (["localhost", "127.0.0.1"].includes(hostname)) return { connectionString: url, max: 5 };
   return {
     connectionString: url,
     max: 5,

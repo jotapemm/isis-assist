@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { AlertCircle, ArrowRight, Building2, CalendarClock, ChevronRight, TrendingUp, Upload, Wrench } from "lucide-react";
+import { AlertCircle, ArrowRight, Bell, Building2, CalendarClock, ChevronRight, TrendingUp, Upload, Wrench } from "lucide-react";
 import { EsqueletoBloco } from "@/components/comum/esqueleto";
 import { EstadoVazio } from "@/components/comum/estado-vazio";
 import { Fachada } from "@/components/comum/fachada";
@@ -17,6 +17,7 @@ import { type Vocabulario, vocabulario } from "@/modulos/apartamentos/vocabulari
 import { obterResumoConta } from "@/modulos/conta/consultas";
 import { avisosDeContratos } from "@/modulos/contratos/consultas";
 import { atrasosParaPainel } from "@/modulos/financeiro/consultas";
+import { lembretesParaPainel } from "@/modulos/lembretes/consultas";
 import { avisosDeManutencao } from "@/modulos/manutencoes/consultas";
 import { abertaHa, numeroOS, PRIORIDADE } from "@/modulos/manutencoes/regras";
 import { exigirContexto } from "@/server/contexto";
@@ -33,12 +34,13 @@ export default function PaginaInicio() {
 
 async function Painel() {
   const ctx = await exigirContexto();
-  const [{ propriedade }, aptos, avisos, atrasos, consertos] = await Promise.all([
+  const [{ propriedade }, aptos, avisos, atrasos, consertos, lembretes] = await Promise.all([
     obterResumoConta(ctx),
     listarApartamentos(ctx),
     avisosDeContratos(ctx),
     atrasosParaPainel(ctx),
     avisosDeManutencao(ctx),
+    lembretesParaPainel(ctx),
   ]);
   const agora = new Date();
   const hoje = new Intl.DateTimeFormat("pt-BR", {
@@ -82,7 +84,7 @@ async function Painel() {
         </EstadoVazio>
       ) : (
         <>
-          <Avisos avisos={avisos} atrasos={atrasos} consertos={consertos} v={v} />
+          <Avisos avisos={avisos} atrasos={atrasos} consertos={consertos} lembretes={lembretes} v={v} />
           <section aria-labelledby="titulo-fachada" className="rounded-3xl border bg-card p-3 sm:p-6">
             <header className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
@@ -131,11 +133,13 @@ function Avisos({
   avisos,
   atrasos,
   consertos,
+  lembretes,
   v,
 }: {
   avisos: Awaited<ReturnType<typeof avisosDeContratos>>;
   atrasos: Awaited<ReturnType<typeof atrasosParaPainel>>;
   consertos: Awaited<ReturnType<typeof avisosDeManutencao>>;
+  lembretes: Awaited<ReturnType<typeof lembretesParaPainel>>;
   v: Vocabulario;
 }) {
   const itens = [
@@ -150,6 +154,13 @@ function Avisos({
           },
         ]
       : []),
+    ...lembretes.map((l) => ({
+      id: `l-${l.id}`,
+      href: "/lembretes",
+      icone: Bell,
+      texto: `${l.titulo}${l.apartamento ? ` (${v.nomeMinusculo(l.apartamento.identificacao)})` : ""}`,
+      quando: l.data === avisos.hoje ? (l.hora ? `hoje às ${l.hora}` : "hoje") : `desde ${formatarData(l.data!)}`,
+    })),
     ...consertos.map((os) => ({
       id: `os-${os.id}`,
       href: `/manutencoes/${os.id}`,

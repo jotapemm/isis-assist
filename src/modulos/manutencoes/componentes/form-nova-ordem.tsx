@@ -25,9 +25,10 @@ type Props = {
   aptos: { id: string; identificacao: string; status: string }[];
   prestadores: { id: string; nome: string; especialidade: string | null }[];
   aptoInicial?: string;
+  tituloInicial?: string;
 };
 
-export function FormNovaOrdem({ tipo, hoje, aptos, prestadores: iniciais, aptoInicial }: Props) {
+export function FormNovaOrdem({ tipo, hoje, aptos, prestadores: iniciais, aptoInicial, tituloInicial }: Props) {
   const v = vocabulario(tipo);
   const [prestadores, setPrestadores] = useState(iniciais);
   const [novoPrestador, setNovoPrestador] = useState(false);
@@ -35,7 +36,7 @@ export function FormNovaOrdem({ tipo, hoje, aptos, prestadores: iniciais, aptoIn
     const apto = aptos.find((a) => a.id === aptoInicial);
     return {
       apartamentoId: apto?.id ?? "",
-      titulo: "",
+      titulo: tituloInicial ?? "",
       descricao: "",
       prioridade: "MEDIA",
       prestadorId: "",

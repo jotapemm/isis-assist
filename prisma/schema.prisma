@@ -113,6 +113,7 @@ model Organization {
   despesas      Despesa[]
   prestadores   Prestador[]
   ordensServico OrdemServico[]
+  lembretes     Lembrete[]
   arquivos      Arquivo[]
 
   @@map("organization")
@@ -246,6 +247,7 @@ model Apartamento {
   contratos       Contrato[]
   despesas        Despesa[]
   ordensServico   OrdemServico[]
+  lembretes       Lembrete[]
 
   @@unique([propriedadeId, identificacao])
   @@index([organizationId])
@@ -669,4 +671,41 @@ model OrdemServico {
   @@index([organizationId, status])
   @@index([apartamentoId])
   @@map("ordem_servico")
+}
+
+// ─── Lembretes (Fase 5) ───
+
+enum RecorrenciaLembrete {
+  NENHUMA
+  SEMANAL
+  MENSAL
+  ANUAL
+}
+
+/// Lembrete com data, ou anotação (sem data). Os do sistema (reajuste, fim de contrato, aluguel vencendo)
+/// não ficam aqui: são calculados na hora (src/modulos/lembretes/consultas.ts).
+model Lembrete {
+  id             String              @id @default(cuid())
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  /// Vazio = do residencial todo.
+  apartamentoId  String?
+  apartamento    Apartamento?        @relation(fields: [apartamentoId], references: [id], onDelete: SetNull)
+  titulo         String
+  descricao      String?
+  /// Vazio = anotação.
+  data           DateTime?           @db.Date
+  /// "HH:MM", opcional.
+  hora           String?
+  importante     Boolean             @default(false)
+  recorrencia    RecorrenciaLembrete @default(NENHUMA)
+  /// Dia do mês pedido na recorrência mensal/anual: o "todo dia 31" volta ao 31 depois de fevereiro.
+  diaRecorrencia Int?
+  concluidoEm    DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([organizationId, concluidoEm, data])
+  @@index([apartamentoId])
+  @@map("lembrete")
 }

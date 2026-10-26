@@ -99,6 +99,7 @@ async function main() {
   await semearContratos(organizationId, userId);
   await semearFinanceiro(organizationId, userId);
   await semearManutencoes(organizationId, userId);
+  await semearLembretes(organizationId);
 
   console.log(`Conta de demonstração pronta: ${EMAIL} (senha em SEED_SENHA no .env).`);
 }
@@ -467,6 +468,74 @@ async function semearManutencoes(organizationId: string, usuarioId: string) {
   }
   await db.configuracao.update({ where: { organizationId }, data: { proximoNumeroOS: numeradas.length + 1 } });
   console.log(`Manutenções: ${PRESTADORES.length} prestadores e ${numeradas.length} ordens de serviço.`);
+}
+
+/**
+ * Fase 5: lembretes que mostram cada caso da tela — para hoje, atrasado (com a sugestão de conserto),
+ * os que repetem (semana, mês, ano), a vistoria de saída no dia em que o contrato do 202 termina,
+ * anotações sem data e alguns já concluídos.
+ */
+async function semearLembretes(organizationId: string) {
+  const hoje = hojeISO();
+  const aptos = await db.apartamento.findMany({ where: { organizationId }, select: { id: true, identificacao: true } });
+  const apto = (identificacao: string) => aptos.find((a) => a.identificacao === identificacao)!.id;
+  const contrato202 = await db.contrato.findFirstOrThrow({
+    where: { organizationId, status: "ATIVO", apartamento: { identificacao: "202" } },
+    select: { dataFim: true },
+  });
+  // Próxima data com esse dia do mês (hoje conta), e o próximo dia da semana (0 = domingo).
+  const proximoDia = (dia: number) => {
+    const neste = vencimentoNoMes(competenciaDe(hoje), dia);
+    return neste >= hoje ? neste : vencimentoNoMes(somarMeses(competenciaDe(hoje), 1), dia);
+  };
+  const proximaSemana = (diaDaSemana: number) => {
+    const [a, m, d] = hoje.split("-").map(Number);
+    return somarDias(hoje, (diaDaSemana - new Date(Date.UTC(a, m - 1, d)).getUTCDay() + 7) % 7);
+  };
+  const proximoMarco = vencimentoNoMes(`${Number(hoje.slice(0, 4)) + (hoje.slice(5, 7) > "03" ? 1 : 0)}-03-01`, 10);
+
+  const lembretes: {
+    titulo: string;
+    descricao?: string;
+    data?: string;
+    hora?: string;
+    apto?: string;
+    importante?: boolean;
+    recorrencia?: "SEMANAL" | "MENSAL" | "ANUAL";
+    concluido?: string;
+  }[] = [
+    { titulo: "Ligar para a interessada no 302 para marcar a assinatura", apto: "302", data: hoje, hora: "10:00", importante: true },
+    { titulo: "Mancha de infiltração no teto do 201", descricao: "O Rafael avisou. Parece vir do banheiro do 301.", apto: "201", data: somarDias(hoje, -2) },
+    { titulo: "Ler o relógio de água e anotar na planilha", data: proximoDia(28), recorrencia: "MENSAL" },
+    { titulo: "Separar o lixo reciclável para a coleta", data: proximaSemana(4), hora: "07:00", recorrencia: "SEMANAL" },
+    { titulo: "Vistoria de saída do 202", descricao: "Conferir pintura, chaves e as leituras de luz e água.", apto: "202", data: isoDeDataCalendario(contrato202.dataFim) },
+    { titulo: "Levar os recibos de aluguel para a contadora (imposto de renda)", data: proximoMarco, recorrencia: "ANUAL", importante: true },
+    { titulo: "Dedetização das áreas comuns", data: somarDias(hoje, 45), recorrencia: "ANUAL" },
+    { titulo: "A chave reserva do 104 está com a dona Sônia, do 103", apto: "104" },
+    { titulo: "Coleta de entulho da prefeitura: ligar 156 para agendar", descricao: "Até 1 m³ é de graça." },
+    { titulo: "Renovar o seguro do prédio", data: somarMeses(hoje, -9), concluido: somarMeses(hoje, -9) },
+    { titulo: "Entregar o carnê do IPTU para os inquilinos", data: somarMeses(hoje, -8), concluido: somarMeses(hoje, -8) },
+  ];
+
+  for (const l of lembretes) {
+    const dia = l.data && (l.recorrencia === "MENSAL" || l.recorrencia === "ANUAL") ? Number(l.data.slice(8, 10)) : null;
+    await db.lembrete.create({
+      data: {
+        organizationId,
+        apartamentoId: l.apto ? apto(l.apto) : null,
+        titulo: l.titulo,
+        descricao: l.descricao ?? null,
+        data: l.data ? paraDataCalendario(l.data) : null,
+        hora: l.hora ?? null,
+        importante: l.importante ?? false,
+        recorrencia: l.recorrencia ?? "NENHUMA",
+        diaRecorrencia: dia,
+        concluidoEm: l.concluido ? meioDia(l.concluido) : null,
+        createdAt: diasAtras(30),
+      },
+    });
+  }
+  console.log(`Lembretes: ${lembretes.length} (com anotações e concluídos).`);
 }
 
 main()

@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 import { configDoBanco } from "./banco-config";
 
 describe("conexão com o banco", () => {
-  it("banco local vai como está", () => {
+  it("banco local vai sem TLS e com poucas conexões (o prisma dev derruba a partir de ~9)", () => {
     expect(configDoBanco("postgres://postgres:postgres@localhost:51214/template1?sslmode=disable")).toEqual({
       connectionString: "postgres://postgres:postgres@localhost:51214/template1?sslmode=disable",
+      max: 5,
     });
   });
 
