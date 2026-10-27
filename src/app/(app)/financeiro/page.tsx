@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
+import { FileBarChart } from "lucide-react";
 import { CabecalhoPagina } from "@/components/comum/cabecalho-pagina";
 import { EsqueletoBloco } from "@/components/comum/esqueleto";
+import { Button } from "@/components/ui/button";
 import { hojeISO } from "@/lib/formatar";
 import { listarApartamentos, tipoDaConta } from "@/modulos/apartamentos/consultas";
 import { PainelFinanceiro } from "@/modulos/financeiro/componentes/painel-financeiro";
@@ -15,7 +18,18 @@ export const metadata: Metadata = { title: "Financeiro" };
 export default function PaginaFinanceiro({ searchParams }: PageProps<"/financeiro">) {
   return (
     <>
-      <CabecalhoPagina titulo="Financeiro" descricao="Aluguéis do mês, pagamentos, recibos e despesas." />
+      <CabecalhoPagina
+        titulo="Financeiro"
+        descricao="Aluguéis do mês, pagamentos, recibos e despesas."
+        acoes={
+          <Button asChild variant="outline">
+            <Link href="/financeiro/relatorios">
+              <FileBarChart className="size-4" />
+              Relatórios e IR
+            </Link>
+          </Button>
+        }
+      />
       <Suspense fallback={<EsqueletoBloco className="h-[32rem]" />}>
         <Conteudo busca={searchParams} />
       </Suspense>

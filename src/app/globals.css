@@ -101,7 +101,9 @@
   --status-reforma: #7347d1;
   --status-manutencao: #cf4f1b;
 
-  --chart-1: #2c3fa3;
+  /* Receitas e despesas dos gráficos: validadas (faixa de luminosidade, daltonismo e contraste) com o
+     validador do guia de visualização. O lápis do tema (#2c3fa3) é escuro demais para barra. */
+  --chart-1: #4357c9;
   --chart-2: #a8792b;
   --chart-3: #1b8f60;
   --chart-4: #cf4f1b;
@@ -149,8 +151,9 @@
   --status-reforma: #a98af0;
   --status-manutencao: #f08452;
 
-  --chart-1: #8f9cf7;
-  --chart-2: #d9ae5a;
+  /* Validadas contra o card escuro (#161a2e); os tons do tema escuro ficariam claros demais para barra. */
+  --chart-1: #7383ec;
+  --chart-2: #b08a3a;
   --chart-3: #3fc58c;
   --chart-4: #f08452;
   --chart-5: #a98af0;

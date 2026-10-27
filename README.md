@@ -39,6 +39,10 @@ no Financeiro ([src/modulos/manutencoes/](src/modulos/manutencoes/)).
 vencimentos de aluguel, reajustes e fins de contrato. Os que repetem (semana, mês, ano) geram a próxima ocorrência ao
 concluir; títulos com palavras de conserto sugerem abrir uma ordem de serviço ([src/modulos/lembretes/](src/modulos/lembretes/)).
 
+**Relatórios:** em Financeiro → Relatórios e IR: mês, ano e informe de IR (carnê-leão), em PDF e Excel, pela rota
+`/api/relatorios/<mensal|anual|ir>?periodo=…&formato=pdf|xlsx`. Receitas pelo regime de caixa (data do pagamento);
+as contas ficam em [src/modulos/relatorios/regras.ts](src/modulos/relatorios/regras.ts).
+
 **LGPD:** cadastro com aceite dos Termos e da Política de Privacidade (`/termos`, `/privacidade`); cada inquilino
 tem "Baixar os dados" (JSON) e "Apagar dados pessoais" no menu ⋯ (nome e CPF ficam até o fim do prazo do imposto
 de renda e a rotina diária apaga depois — [src/modulos/inquilinos/privacidade.ts](src/modulos/inquilinos/privacidade.ts));

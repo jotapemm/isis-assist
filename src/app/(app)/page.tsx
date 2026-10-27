@@ -19,6 +19,8 @@ import { avisosDeContratos } from "@/modulos/contratos/consultas";
 import { atrasosParaPainel } from "@/modulos/financeiro/consultas";
 import { lembretesParaPainel } from "@/modulos/lembretes/consultas";
 import { avisosDeManutencao } from "@/modulos/manutencoes/consultas";
+import { EvolucaoDoAno, NumerosDoMes } from "@/modulos/relatorios/componentes/numeros-do-painel";
+import { numerosDoPainel } from "@/modulos/relatorios/consultas";
 import { abertaHa, numeroOS, PRIORIDADE } from "@/modulos/manutencoes/regras";
 import { exigirContexto } from "@/server/contexto";
 
@@ -34,13 +36,14 @@ export default function PaginaInicio() {
 
 async function Painel() {
   const ctx = await exigirContexto();
-  const [{ propriedade }, aptos, avisos, atrasos, consertos, lembretes] = await Promise.all([
+  const [{ propriedade }, aptos, avisos, atrasos, consertos, lembretes, numeros] = await Promise.all([
     obterResumoConta(ctx),
     listarApartamentos(ctx),
     avisosDeContratos(ctx),
     atrasosParaPainel(ctx),
     avisosDeManutencao(ctx),
     lembretesParaPainel(ctx),
+    numerosDoPainel(ctx),
   ]);
   const agora = new Date();
   const hoje = new Intl.DateTimeFormat("pt-BR", {
@@ -84,6 +87,7 @@ async function Painel() {
         </EstadoVazio>
       ) : (
         <>
+          <NumerosDoMes n={numeros} />
           <Avisos avisos={avisos} atrasos={atrasos} consertos={consertos} lembretes={lembretes} v={v} />
           <section aria-labelledby="titulo-fachada" className="rounded-3xl border bg-card p-3 sm:p-6">
             <header className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -122,6 +126,7 @@ async function Painel() {
 
             <MapaResidencial tipo={tipo} aptos={aptos} residencial={residencial} />
           </section>
+          <EvolucaoDoAno n={numeros} />
         </>
       )}
     </>
